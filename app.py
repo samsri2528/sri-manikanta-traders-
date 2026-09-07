@@ -95,6 +95,18 @@ else:
             st.dataframe(inventory_df, use_container_width=True)
 
     elif menu == "Billing & Sales":
+        # Print CSS to keep only the invoice box during printing
+        st.markdown("""
+        <style>
+        @media print {
+            body * { visibility: hidden; }
+            #invoice-print-area, #invoice-print-area * { visibility: visible; }
+            #invoice-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .stSidebar, header, footer, .no-print { display: none !important; }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         st.title("🧾 Sales Invoice & Billing")
         st.write("D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343")
         st.markdown("---")
@@ -135,73 +147,71 @@ else:
                                             columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
                     sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
                     save_sales(sales_df)
+                    st.session_state["last_bill"] = {
+                        "bill_no": bill_no,
+                        "date": str(bill_date),
+                        "cust_name": cust_name,
+                        "mobile": mobile_no,
+                        "item": selected_item,
+                        "qty": qty,
+                        "price": price,
+                        "total": total_amount
+                    }
                     st.success(f"✅ Bill Generated Successfully for {cust_name}! Total: ₹ {total_amount:.2f}")
-                    
-                    # Printable Bill UI with Print Button
-                    bill_html = f"""
-                    <script>
-                    function printBill() {{
-                        window.print();
-                    }}
-                    </script>
-                    <style>
-                    @media print {{
-                        body * {{ visibility: hidden; }}
-                        #print-section, #print-section * {{ visibility: visible; }}
-                        #print-section {{ position: absolute; left: 0; top: 0; width: 100%; }}
-                        .no-print {{ display: none; }}
-                    }}
-                    </style>
-                    
-                    <div style="text-align: right; margin-bottom: 10px;" class="no-print">
-                        <button onclick="window.print()" style="background-color: #1b4d3e; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold;">🖨️ Print / Save as PDF</button>
-                    </div>
-
-                    <div id="print-section" style="background: white; padding: 15px; color: black; font-family: Arial, sans-serif;">
-                        <!-- FARMER COPY -->
-                        <div style="border: 2px solid #1b4d3e; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                            <h3 style="text-align: center; color: #1b4d3e; margin: 0;">SRI MANIKANTA TRADERS</h3>
-                            <p style="text-align: center; font-size: 11px; margin: 2px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                            <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 5px 0; padding: 3px; font-size: 12px;">FARMER COPY</p>
-                            <hr style="margin: 5px 0;">
-                            <table width="100%" style="font-size: 12px;">
-                                <tr><td><b>Bill No:</b> {bill_no}</td><td><b>Date:</b> {bill_date}</td></tr>
-                                <tr><td><b>Customer:</b> {cust_name}</td><td><b>Mobile:</b> {mobile_no}</td></tr>
-                            </table>
-                            <hr style="margin: 5px 0;">
-                            <table width="100%" style="border-collapse: collapse; font-size: 12px;" border="1">
-                                <tr style="background: #f1f5f9;"><th style="padding: 4px;">Item Name</th><th style="padding: 4px;">Qty</th><th style="padding: 4px;">Price</th><th style="padding: 4px;">Total</th></tr>
-                                <tr><td style="padding: 4px;">{selected_item}</td><td style="padding: 4px; text-align: center;">{qty}</td><td style="padding: 4px; text-align: right;">₹{price}</td><td style="padding: 4px; text-align: right;">₹{total_amount}</td></tr>
-                            </table>
-                            <h4 style="text-align: right; margin: 6px 0 0 0; font-size: 14px;">Grand Total: ₹ {total_amount:.2f}</h4>
-                            <p style="text-align: center; font-size: 10px; margin: 4px 0 0 0;">Thank you! Visit Again. 🌾</p>
-                        </div>
-
-                        <div style="border-bottom: 2px dashed #999; margin: 10px 0; text-align: center; font-size: 11px; color: #666;">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>
-
-                        <!-- STORE COPY -->
-                        <div style="border: 2px solid #333; padding: 15px; border-radius: 8px;">
-                            <h3 style="text-align: center; color: #333; margin: 0;">SRI MANIKANTA TRADERS</h3>
-                            <p style="text-align: center; font-size: 11px; margin: 2px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                            <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 5px 0; padding: 3px; font-size: 12px;">STORE COPY</p>
-                            <hr style="margin: 5px 0;">
-                            <table width="100%" style="font-size: 12px;">
-                                <tr><td><b>Bill No:</b> {bill_no}</td><td><b>Date:</b> {bill_date}</td></tr>
-                                <tr><td><b>Customer:</b> {cust_name}</td><td><b>Mobile:</b> {mobile_no}</td></tr>
-                            </table>
-                            <hr style="margin: 5px 0;">
-                            <table width="100%" style="border-collapse: collapse; font-size: 12px;" border="1">
-                                <tr style="background: #f1f5f9;"><th style="padding: 4px;">Item Name</th><th style="padding: 4px;">Qty</th><th style="padding: 4px;">Price</th><th style="padding: 4px;">Total</th></tr>
-                                <tr><td style="padding: 4px;">{selected_item}</td><td style="padding: 4px; text-align: center;">{qty}</td><td style="padding: 4px; text-align: right;">₹{price}</td><td style="padding: 4px; text-align: right;">₹{total_amount}</td></tr>
-                            </table>
-                            <h4 style="text-align: right; margin: 6px 0 0 0; font-size: 14px;">Grand Total: ₹ {total_amount:.2f}</h4>
-                            <p style="text-align: center; font-size: 10px; margin: 4px 0 0 0;">Store Office Copy</p>
-                        </div>
-                    </div>
-                    """
-                    st.markdown(bill_html, unsafe_allow_html=True)
                 else:
                     st.warning("⚠️ Please enter Customer Name.")
+
+        # Display Invoice & Print Instructions if bill is generated
+        if "last_bill" in st.session_state:
+            b = st.session_state["last_bill"]
+            st.markdown("---")
+            st.markdown("### 🖨️ Bill Ready for Print")
+            st.info("💡 ప్రింట్ చేయడానికి మీ కీబోర్డ్ మీద **Ctrl + P** నొక్కండి (లేదా బ్రౌజర్ మెనూలో Print ఆప్షన్ క్లిక్ చేయండి). సైడ్‌బార్ లేదా ఇతర యాప్ మెనూలు ప్రింట్‌లో రావు, కేవలం ఈ రెండు కాపీల బిల్లు మాత్రమే వస్తుంది!")
+            
+            bill_html = f"""
+            <div id="invoice-print-area" style="background: white; padding: 15px; color: black; font-family: Arial, sans-serif; border: 1px solid #ccc;">
+                <!-- FARMER COPY -->
+                <div style="border: 2px solid #1b4d3e; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                    <h3 style="text-align: center; color: #1b4d3e; margin: 0;">SRI MANIKANTA TRADERS</h3>
+                    <p style="text-align: center; font-size: 11px; margin: 2px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                    <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 5px 0; padding: 3px; font-size: 12px;">FARMER COPY</p>
+                    <hr style="margin: 5px 0;">
+                    <table width="100%" style="font-size: 12px;">
+                        <tr><td><b>Bill No:</b> {b['bill_no']}</td><td><b>Date:</b> {b['date']}</td></tr>
+                        <tr><td><b>Customer:</b> {b['cust_name']}</td><td><b>Mobile:</b> {b['mobile']}</td></tr>
+                    </table>
+                    <hr style="margin: 5px 0;">
+                    <table width="100%" style="border-collapse: collapse; font-size: 12px;" border="1">
+                        <tr style="background: #f1f5f9;"><th style="padding: 4px;">Item Name</th><th style="padding: 4px;">Qty</th><th style="padding: 4px;">Price</th><th style="padding: 4px;">Total</th></tr>
+                        <tr><td style="padding: 4px;">{b['item']}</td><td style="padding: 4px; text-align: center;">{b['qty']}</td><td style="padding: 4px; text-align: right;">₹{b['price']}</td><td style="padding: 4px; text-align: right;">₹{b['total']}</td></tr>
+                    </table>
+                    <h4 style="text-align: right; margin: 6px 0 0 0; font-size: 14px;">Grand Total: ₹ {b['total']:.2f}</h4>
+                    <p style="text-align: center; font-size: 10px; margin: 4px 0 0 0;">Thank you! Visit Again. 🌾</p>
+                </div>
+
+                <div style="border-bottom: 2px dashed #999; margin: 10px 0; text-align: center; font-size: 11px; color: #666;">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>
+
+                <!-- STORE COPY -->
+                <div style="border: 2px solid #333; padding: 12px; border-radius: 6px;">
+                    <h3 style="text-align: center; color: #333; margin: 0;">SRI MANIKANTA TRADERS</h3>
+                    <p style="text-align: center; font-size: 11px; margin: 2px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                    <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 5px 0; padding: 3px; font-size: 12px;">STORE COPY</p>
+                    <hr style="margin: 5px 0;">
+                    <table width="100%" style="font-size: 12px;">
+                        <tr><td><b>Bill No:</b> {b['bill_no']}</td><td><b>Date:</b> {b['date']}</td></tr>
+                        <tr><td><b>Customer:</b> {b['cust_name']}</td><td><b>Mobile:</b> {b['mobile']}</td></tr>
+                    </table>
+                    <hr style="margin: 5px 0;">
+                    <table width="100%" style="border-collapse: collapse; font-size: 12px;" border="1">
+                        <tr style="background: #f1f5f9;"><th style="padding: 4px;">Item Name</th><th style="padding: 4px;">Qty</th><th style="padding: 4px;">Price</th><th style="padding: 4px;">Total</th></tr>
+                        <tr><td style="padding: 4px;">{b['item']}</td><td style="padding: 4px; text-align: center;">{b['qty']}</td><td style="padding: 4px; text-align: right;">₹{b['price']}</td><td style="padding: 4px; text-align: right;">₹{b['total']}</td></tr>
+                    </table>
+                    <h4 style="text-align: right; margin: 6px 0 0 0; font-size: 14px;">Grand Total: ₹ {b['total']:.2f}</h4>
+                    <p style="text-align: center; font-size: 10px; margin: 4px 0 0 0;">Store Office Copy</p>
+                </div>
+            </div>
+            """
+            st.markdown(bill_html, unsafe_allow_html=True)
 
     elif menu == "Sales History & Reports":
         st.title("📊 Total Bills & Category Sales Report")
