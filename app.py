@@ -95,6 +95,29 @@ else:
             st.dataframe(inventory_df, use_container_width=True)
 
     elif menu == "Billing & Sales":
+        # CSS to hide everything except the print bill area during printing
+        st.markdown("""
+        <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-area, #printable-area * {
+                visibility: visible;
+            }
+            #printable-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .stSidebar, button, header, footer {
+                display: none !important;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         st.title("🧾 Sales Invoice & Billing")
         st.write("D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343")
         st.markdown("---")
@@ -137,50 +160,68 @@ else:
                     save_sales(sales_df)
                     st.success(f"✅ Bill Generated Successfully for {cust_name}! Total: ₹ {total_amount:.2f}")
                     
-                    # Printable Bill Format Preview
-                    st.markdown("---")
-                    st.markdown("### 📄 Print / Download Invoice Preview")
-                    st.markdown(f"""
-                    <div style="border: 2px solid #1b4d3e; padding: 20px; border-radius: 10px; background: white; color: black;">
-                        <h2 style="text-align: center; color: #1b4d3e;">SRI MANIKANTA TRADERS</h2>
-                        <p style="text-align: center;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                        <hr>
-                        <p><b>Bill No:</b> {bill_no} &nbsp;&nbsp;&nbsp;&nbsp; <b>Date:</b> {bill_date}</p>
-                        <p><b>Customer Name:</b> {cust_name} &nbsp;&nbsp;&nbsp;&nbsp; <b>Mobile:</b> {mobile_no}</p>
-                        <hr>
-                        <table width="100%" style="border-collapse: collapse;">
-                            <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-                            <tr><td>{selected_item}</td><td>{qty}</td><td>₹{price}</td><td>₹{total_amount}</td></tr>
-                        </table>
-                        <hr>
-                        <h3 style="text-align: right;">Grand Total: ₹ {total_amount:.2f}</h3>
-                        <p style="text-align: center; color: #555;">Thank you! Visit Again.</p>
+                    # Single A4 Page Containing Farmer Copy and Store Copy
+                    bill_html = f"""
+                    <div id="printable-area" style="background: white; padding: 15px; color: black; font-family: Arial, sans-serif;">
+                        <!-- FARMER COPY -->
+                        <div style="border: 2px solid #1b4d3e; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <h3 style="text-align: center; color: #1b4d3e; margin: 0;">SRI MANIKANTA TRADERS</h3>
+                            <p style="text-align: center; font-size: 12px; margin: 2px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                            <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 5px 0; padding: 3px;">FARMER COPY</p>
+                            <hr style="margin: 5px 0;">
+                            <table width="100%" style="font-size: 13px;">
+                                <tr><td><b>Bill No:</b> {bill_no}</td><td><b>Date:</b> {bill_date}</td></tr>
+                                <tr><td><b>Customer:</b> {cust_name}</td><td><b>Mobile:</b> {mobile_no}</td></tr>
+                            </table>
+                            <hr style="margin: 5px 0;">
+                            <table width="100%" style="border-collapse: collapse; font-size: 13px;" border="1">
+                                <tr style="background: #f1f5f9;"><th style="padding: 4px;">Item Name</th><th style="padding: 4px;">Qty</th><th style="padding: 4px;">Price</th><th style="padding: 4px;">Total</th></tr>
+                                <tr><td style="padding: 4px;">{selected_item}</td><td style="padding: 4px; text-align: center;">{qty}</td><td style="padding: 4px; text-align: right;">₹{price}</td><td style="padding: 4px; text-align: right;">₹{total_amount}</td></tr>
+                            </table>
+                            <h4 style="text-align: right; margin: 8px 0 0 0;">Grand Total: ₹ {total_amount:.2f}</h4>
+                            <p style="text-align: center; font-size: 11px; margin: 5px 0 0 0;">Thank you! Visit Again. 🌾</p>
+                        </div>
+
+                        <div style="border-dash: 2px dashed #999; margin: 15px 0; text-align: center; font-size: 12px; color: #666;">✂ - - - - - - - - - - - - - - - - - - - - CUT HERE - - - - - - - - - - - - - - - - - - - - ✂</div>
+
+                        <!-- STORE COPY -->
+                        <div style="border: 2px solid #333; padding: 15px; border-radius: 8px;">
+                            <h3 style="text-align: center; color: #333; margin: 0;">SRI MANIKANTA TRADERS</h3>
+                            <p style="text-align: center; font-size: 12px; margin: 2px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                            <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 5px 0; padding: 3px;">STORE COPY</p>
+                            <hr style="margin: 5px 0;">
+                            <table width="100%" style="font-size: 13px;">
+                                <tr><td><b>Bill No:</b> {bill_no}</td><td><b>Date:</b> {bill_date}</td></tr>
+                                <tr><td><b>Customer:</b> {cust_name}</td><td><b>Mobile:</b> {mobile_no}</td></tr>
+                            </table>
+                            <hr style="margin: 5px 0;">
+                            <table width="100%" style="border-collapse: collapse; font-size: 13px;" border="1">
+                                <tr style="background: #f1f5f9;"><th style="padding: 4px;">Item Name</th><th style="padding: 4px;">Qty</th><th style="padding: 4px;">Price</th><th style="padding: 4px;">Total</th></tr>
+                                <tr><td style="padding: 4px;">{selected_item}</td><td style="padding: 4px; text-align: center;">{qty}</td><td style="padding: 4px; text-align: right;">₹{price}</td><td style="padding: 4px; text-align: right;">₹{total_amount}</td></tr>
+                            </table>
+                            <h4 style="text-align: right; margin: 8px 0 0 0;">Grand Total: ₹ {total_amount:.2f}</h4>
+                            <p style="text-align: center; font-size: 11px; margin: 5px 0 0 0;">Store Office Copy</p>
+                        </div>
                     </div>
-                    """, unsafe_allow_html=True)
-                    st.info("💡 Tip: You can press **Ctrl + P** on your keyboard to print this bill directly or save as PDF!")
+                    """
+                    st.markdown(bill_html, unsafe_allow_html=True)
+                    st.info("💡 ఇక్కడ ప్రింట్ ఆప్షన్ వాడినప్పుడు సైడ్‌బార్ లేదా ఇతర యాప్ మెనూలు ఏవీ రావు! కేవలం ఈ రెండు కాపీల బిల్లు మాత్రమే A4 పేపర్‌లో ప్రింట్ అవుతుంది.")
                 else:
                     st.warning("⚠️ Please enter Customer Name.")
 
     elif menu == "Sales History & Reports":
         st.title("📊 Total Bills & Category Sales Report")
-        
-        if sales_df.empty:
-            st.info("No sales records found yet.")
-        else:
+        if not sales_df.empty:
             st.markdown("### 📋 All Bills History")
             st.dataframe(sales_df, use_container_width=True)
-            
             st.markdown("### 📈 Category-wise Sales Summary")
-            # Merge with inventory to get categories
             merged_df = pd.merge(sales_df, inventory_df[["Item Name", "Category"]], on="Item Name", how="left")
             category_summary = merged_df.groupby("Category")["Total Amount"].sum().reset_index()
             st.dataframe(category_summary, use_container_width=True)
 
     elif menu == "Cash Book":
         st.title("📒 Cash Book & Daily Ledger")
-        if sales_df.empty:
-            st.info("No cash transactions recorded yet.")
-        else:
+        if not sales_df.empty:
             total_revenue = sales_df["Total Amount"].sum()
             st.metric(label="💵 Total Cash Collected (Revenue)", value=f"₹ {total_revenue:.2f}")
             st.markdown("### 💰 Transaction Ledger")
