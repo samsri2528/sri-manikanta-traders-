@@ -41,7 +41,6 @@ def load_sales():
         df = pd.read_excel(SALES_FILE)
         if not df.empty and "Date" in df.columns:
             df["Date"] = pd.to_datetime(df["Date"], errors='coerce').dt.strftime('%d-%m-%Y').fillna(df["Date"])
-        # Ensure Aadhaar column exists in old files
         if "Aadhaar No" not in df.columns:
             df["Aadhaar No"] = ""
         return df
@@ -78,15 +77,18 @@ if "cart" not in st.session_state:
     st.session_state["cart"] = []
 
 if not st.session_state["authenticated"]:
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #fffef9 0%, #f4ebd0 100%); border: 3px solid #8b0000; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 25px;">
-        <div style="font-size: 55px; color: #b8860b; margin-bottom: -5px;">🕉️</div>
-        <h1 style="color: #8b0000; font-family: 'Georgia', serif; font-size: 44px; font-weight: bold; margin: 10px 0 0 0;">SRI MANIKANTA TRADERS</h1>
-        <h2 style="color: #004d1a; font-family: 'Georgia', serif; font-size: 28px; font-weight: bold; margin: 0 0 10px 0;">TRADERS</h2>
-        <hr style="border: 0; height: 1px; background: #b8860b; width: 60%; margin: 15px auto;">
-        <p style="color: #444; font-size: 15px; font-weight: 500; margin: 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Display the beautiful banner image if it exists
+    if os.path.exists("banner.png"):
+        st.image("banner.png", use_container_width=True)
+    else:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #fffef9 0%, #f4ebd0 100%); border: 3px solid #8b0000; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 25px;">
+            <div style="font-size: 55px; color: #b8860b; margin-bottom: -5px;">🕉️</div>
+            <h1 style="color: #8b0000; font-family: 'Georgia', serif; font-size: 44px; font-weight: bold; margin: 10px 0 0 0;">SRI MANIKANTA TRADERS</h1>
+            <hr style="border: 0; height: 1px; background: #b8860b; width: 60%; margin: 15px auto;">
+            <p style="color: #444; font-size: 15px; font-weight: 500; margin: 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     col1, col2 = st.columns([1.2, 1])
     with col1:
