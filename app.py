@@ -39,6 +39,9 @@ def save_inventory(df):
 def load_sales():
     if os.path.exists(SALES_FILE):
         df = pd.read_excel(SALES_FILE)
+        if not df.empty and "Date" in df.columns:
+            # Normalize old date formats to DD-MM-YYYY
+            df["Date"] = pd.to_datetime(df["Date"], errors='coerce').dt.strftime('%d-%m-%Y').fillna(df["Date"])
         return df
     else:
         df = pd.DataFrame(columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
@@ -53,7 +56,9 @@ def load_cash_deposits():
         df = pd.read_excel(CASH_BOOK_FILE)
         if "Receipt Name" not in df.columns:
             df["Receipt Name"] = "No Receipt"
-            df.to_excel(CASH_BOOK_FILE, index=False)
+        if not df.empty and "Date" in df.columns:
+            df["Date"] = pd.to_datetime(df["Date"], errors='coerce').dt.strftime('%d-%m-%Y').fillna(df["Date"])
+        df.to_excel(CASH_BOOK_FILE, index=False)
         return df
     else:
         df = pd.DataFrame(columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
@@ -225,7 +230,10 @@ else:
             next_bill_no = f"SMT-{len(sales_df['Bill No'].unique())+1:03d}" if not sales_df.empty else "SMT-001"
             bill_no = st.text_input("Bill No", value=next_bill_no)
         with col_b2:
-            bill_date = st.date_input("Date", value=datetime.now())
+            # Custom display label for date input or formatted string display
+            bill_date_input = st.date_input("Date", value=datetime.now())
+            bill_date_str = bill_date_input.strftime("%d-%m-%Y")
+            st.caption(f"Selected Date: **{bill_date_str}**")
         with col_b3:
             mobile_no = st.text_input("Mobile No (10 Digits)", max_chars=10)
             
@@ -289,10 +297,9 @@ else:
                 with col_act2:
                     if st.button("💾 Save & Generate Final Bill", use_container_width=True):
                         if cust_name and mobile_no:
-                            formatted_date_str = bill_date.strftime("%d-%m-%Y")
                             for item in st.session_state["cart"]:
                                 new_sale = pd.DataFrame([[
-                                    bill_no, formatted_date_str, cust_name, str(mobile_no), 
+                                    bill_no, bill_date_str, cust_name, str(mobile_no), 
                                     item["Item Name"], item["Qty"], item["Price"], item["Total"]
                                 ]], columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
                                 sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
@@ -307,7 +314,7 @@ else:
                             
                             st.session_state["last_bill"] = {
                                 "bill_no": bill_no,
-                                "date": formatted_date_str,
+                                "date": bill_date_str,
                                 "cust_name": cust_name,
                                 "mobile": str(mobile_no),
                                 "items": st.session_state["cart"].copy(),
@@ -516,7 +523,9 @@ else:
         with st.form("bank_deposit_form"):
             col_d1, col_d2 = st.columns(2)
             with col_d1:
-                dep_date = st.date_input("Deposit Date", value=datetime.now())
+                dep_date_input = st.date_input("Deposit Date", value=datetime.now())
+                dep_date_str = dep_date_input.strftime("%d-%m-%Y")
+                st.caption(f"Selected Date: **{dep_date_str}**")
                 dep_desc = st.text_input("Description / Bank Name", value="Bank Deposit")
             with col_d2:
                 dep_amount = st.number_input("Deposit Amount (₹)", min_value=1.0, value=1000.0)
@@ -530,8 +539,7 @@ else:
                     with open(os.path.join("receipts", receipt_file.name), "wb") as f:
                         f.write(receipt_file.getbuffer())
 
-                formatted_dep_date = dep_date.strftime("%d-%m-%Y")
-                new_dep = pd.DataFrame([[formatted_dep_date, dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
+                new_dep = pd.DataFrame([[dep_date_str, dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
                 cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
                 save_cash_deposits(cash_df)
                 st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt recorded successfully!")
@@ -568,7 +576,7 @@ else:
                     with col_r2:
                         st.markdown("<br><br>", unsafe_allow_html=True)
                         orig_idx = len(cash_df) - 1 - idx
-                        if st.button(f"🗑️ Delete Entry", key=f"del_dep_{idx}"):
+                        if st.button(f"🗑️ Delete Entry", key=f"del_dep_{idx}T"):
                             cash_df = cash_df.drop(orig_idx).reset_index(drop=True)
                             save_cash_deposits(cash_df)
                             st.success("Deleted deposit record successfully!")
