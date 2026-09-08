@@ -3,7 +3,6 @@ import pandas as pd
 import os
 from datetime import datetime
 import streamlit.components.v1 as components
-import base64
 
 # Page Configuration
 st.set_page_config(
@@ -50,7 +49,11 @@ def save_sales(df):
 
 def load_cash_deposits():
     if os.path.exists(CASH_BOOK_FILE):
-        return pd.read_excel(CASH_BOOK_FILE)
+        df = pd.read_excel(CASH_BOOK_FILE)
+        if "Receipt Name" not in df.columns:
+            df["Receipt Name"] = "No Receipt"
+            df.to_excel(CASH_BOOK_FILE, index=False)
+        return df
     else:
         df = pd.DataFrame(columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
         df.to_excel(CASH_BOOK_FILE, index=False)
@@ -442,7 +445,6 @@ else:
                 receipt_name = "No Receipt"
                 if receipt_file is not None:
                     receipt_name = receipt_file.name
-                    # Save receipt to local folder
                     os.makedirs("receipts", exist_ok=True)
                     with open(os.path.join("receipts", receipt_file.name), "wb") as f:
                         f.write(receipt_file.getbuffer())
@@ -456,36 +458,37 @@ else:
         st.markdown("### 🏦 Bank Deposit History & Receipts")
         if not cash_df.empty:
             for idx, row in cash_df.iterrows():
-                with st.expander(f"📅 Date: {row['Date']} | 🏦 {row['Description']} | Amount: ₹ {row['Deposit Amount (₹)']} | Receipt: {row['Receipt Name']}"):
+                rec_name = row['Receipt Name'] if 'Receipt Name' in row and pd.notna(row['Receipt Name']) else "No Receipt"
+                with st.expander(f"📅 Date: {row['Date']} | 🏦 {row['Description']} | Amount: ₹ {row['Deposit Amount (₹)']} | Receipt: {rec_name}"):
                     col_r1, col_r2 = st.columns([2, 1])
                     with col_r1:
                         st.write(f"**Deposit Date:** {row['Date']}")
                         st.write(f"**Bank / Description:** {row['Description']}")
                         st.write(f"**Amount Deposited:** ₹ {row['Deposit Amount (₹)']}")
-                        st.write(f"**Attached File:** {row['Receipt Name']}")
-                    with col_r2:
-                        rec_path = os.path.join("receipts", str(row['Receipt Name']))
-                        if row['Receipt Name'] != "No Receipt" and os.path.exists(rec_path):
-                            if row['Receipt Name'].lower().endswith(('.png', '.jpg', '.jpeg')):
+                        st.write(f"**Attached File:** {rec_name}")
+                        
+                        rec_path = os.path.join("receipts", str(rec_name))
+                        if rec_name != "No Receipt" and os.path.exists(rec_path):
+                            if rec_name.lower().endswith(('.png', '.jpg', '.jpeg')):
                                 st.image(rec_path, caption="Deposit Receipt", width=250)
                             with open(rec_path, "rb") as file_btn:
                                 st.download_button(
                                     label="📥 Download Receipt",
                                     data=file_btn,
-                                    file_name=row['Receipt Name'],
+                                    file_name=rec_name,
                                     mime="application/octet-stream",
                                     key=f"dl_rec_{idx}"
                                 )
                         else:
                             st.info("No receipt uploaded for this entry.")
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🗑️ Delete Last Deposit Record"):
-                if len(cash_df) > 0:
-                    cash_df = cash_df.iloc[:-1]
-                    save_cash_deposits(cash_df)
-                    st.success("Deleted last deposit record!")
-                    st.rerun()
+                            
+                    with col_r2:
+                        st.markdown("<br><br>", unsafe_allow_html=True)
+                        if st.button(f"🗑️ Delete Entry", key=f"del_dep_{idx}"):
+                            cash_df = cash_df.drop(idx).reset_index(drop=True)
+                            save_cash_deposits(cash_df)
+                            st.success("Deleted deposit record successfully!")
+                            st.rerun()
         else:
             st.info("No bank deposits recorded yet.")
 
