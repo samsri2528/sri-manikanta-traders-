@@ -178,7 +178,6 @@ else:
                 with col_act2:
                     if st.button("💾 Save & Generate Final Bill", use_container_width=True):
                         if cust_name:
-                            # Save each item to sales history
                             for item in st.session_state["cart"]:
                                 new_sale = pd.DataFrame([[
                                     bill_no, str(bill_date), cust_name, mobile_no, 
@@ -200,13 +199,12 @@ else:
                         else:
                             st.warning("⚠️ Please enter Customer Name.")
 
-        # Display Bill using direct HTML component for flawless printing of multiple items
+        # Display Bill using direct HTML component for flawless printing
         if "last_bill" in st.session_state:
             b = st.session_state["last_bill"]
             st.markdown("---")
             st.markdown("### 🖨️ Bill Ready for Print")
             
-            # Build table rows for items
             items_rows_html = ""
             for itm in b['items']:
                 items_rows_html += f"""
@@ -215,7 +213,7 @@ else:
                     <td class="center">{itm['Qty']}</td>
                     <td class="right">₹{itm['Price']}</td>
                     <td class="right">₹{itm['Total']}</td>
-                }
+                </tr>
                 """
             
             complete_invoice_html = f"""
