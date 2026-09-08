@@ -23,6 +23,7 @@ st.markdown("""
 # Data Files
 INVENTORY_FILE = "inventory.xlsx"
 SALES_FILE = "sales_history.xlsx"
+CASH_BOOK_FILE = "cash_book_deposits.xlsx"
 
 def load_inventory():
     if os.path.exists(INVENTORY_FILE):
@@ -45,6 +46,17 @@ def load_sales():
 
 def save_sales(df):
     df.to_excel(SALES_FILE, index=False)
+
+def load_cash_deposits():
+    if os.path.exists(CASH_BOOK_FILE):
+        return pd.read_excel(CASH_BOOK_FILE)
+    else:
+        df = pd.DataFrame(columns=["Date", "Description", "Deposit Amount (₹)"])
+        df.to_excel(CASH_BOOK_FILE, index=False)
+        return df
+
+def save_cash_deposits(df):
+    df.to_excel(CASH_BOOK_FILE, index=False)
 
 # Session State Authentication & Cart
 if "authenticated" not in st.session_state:
@@ -93,6 +105,7 @@ else:
         
     inventory_df = load_inventory()
     sales_df = load_sales()
+    cash_df = load_cash_deposits()
 
     if menu == "Manage Inventory":
         st.title("📦 Inventory & Stock Management")
@@ -132,7 +145,6 @@ else:
         with col_b3:
             mobile_no = st.text_input("Mobile No (10 Digits)", max_chars=10)
             
-        # Auto-fetch customer name if mobile number exists in sales history
         default_cust_name = ""
         if mobile_no and len(mobile_no) == 10 and not sales_df.empty:
             match = sales_df[sales_df["Mobile"].astype(str) == str(mobile_no)]
@@ -150,7 +162,6 @@ else:
             with col_item1:
                 selected_item = st.selectbox("Select Product", item_list)
             
-            # Show available stock for the selected item
             item_row = inventory_df[inventory_df["Item Name"] == selected_item]
             available_stock = float(item_row["Quantity"].values[0]) if not item_row.empty else 0.0
             default_price = float(item_row["Price (₹)"].values[0]) if not item_row.empty else 100.0
@@ -178,7 +189,6 @@ else:
                     })
                     st.success(f"Added {selected_item} to cart!")
 
-            # Display Current Cart Items
             if len(st.session_state["cart"]) > 0:
                 st.markdown("#### 🛍️ Current Cart Items")
                 cart_df = pd.DataFrame(st.session_state["cart"])
@@ -224,7 +234,6 @@ else:
                         else:
                             st.warning("⚠️ Please enter both Customer Name and Mobile Number.")
 
-        # Display Bill using direct HTML component for flawless printing
         if "last_bill" in st.session_state:
             b = st.session_state["last_bill"]
             st.markdown("---")
@@ -261,18 +270,12 @@ else:
                     .center {{ text-align: center; }}
                     .dashed-line {{ border-bottom: 2px dashed #999; margin: 10px 0; text-align: center; font-size: 12px; color: #666; }}
                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
-                    .print-btn:hover {{ background: #5c0000; }}
-                    @media print {{
-                        .print-btn {{ display: none; }}
-                        body {{ padding: 0; }}
-                    }}
+                    @media print {{ .print-btn {{ display: none; }} body {{ padding: 0; }} }}
                 </style>
             </head>
             <body>
                 <button class="print-btn" onclick="window.print()">🖨️ Click Here to Print Both Copies</button>
-                
                 <div class="invoice-box">
-                    <!-- FARMER COPY -->
                     <div class="copy-section">
                         <h3>🕉️ SRI MANIKANTA TRADERS</h3>
                         <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
@@ -287,12 +290,8 @@ else:
                             {items_rows_html}
                         </table>
                         <h4 style="text-align: right; margin: 5px 0 0 0; color: #8b0000;">Grand Total: ₹ {b['grand_total']:.2f}</h4>
-                        <p style="font-size: 10px; margin-top: 4px;">Thank you! Visit Again. 🌾</p>
                     </div>
-
                     <div class="dashed-line">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>
-
-                    <!-- STORE COPY -->
                     <div class="copy-section store-copy">
                         <h3 style="color: #333;">SRI MANIKANTA TRADERS</h3>
                         <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
@@ -307,13 +306,11 @@ else:
                             {items_rows_html}
                         </table>
                         <h4 style="text-align: right; margin: 5px 0 0 0; color: #333;">Grand Total: ₹ {b['grand_total']:.2f}</h4>
-                        <p style="font-size: 10px; margin-top: 4px;">Store Office Copy</p>
                     </div>
                 </div>
             </body>
             </html>
             """
-            
             components.html(complete_invoice_html, height=750, scrolling=True)
 
     elif menu == "Sales History & Reports":
@@ -345,8 +342,6 @@ else:
                             })
                         
                         reprint_grand_total = sum(i["Total"] for i in reprint_items)
-                        
-                        # Render reprint html
                         reprint_items_html = ""
                         for itm in reprint_items:
                             reprint_items_html += f"""
@@ -365,18 +360,14 @@ else:
                                 body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 10px; }}
                                 .invoice-box {{ max-width: 700px; margin: auto; padding: 10px; border: 1px solid #eee; background: #fff; }}
                                 .copy-section {{ border: 2px solid #8b0000; padding: 10px; border-radius: 6px; margin-bottom: 10px; }}
-                                .store-copy {{ border: 2px solid #333 !important; }}
                                 h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 16px; }}
-                                .store-copy h3 {{ color: #333; }}
                                 p {{ text-align: center; font-size: 11px; margin: 2px 0; }}
                                 .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 5px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b; }}
-                                .store-badge {{ background: #e2e8f0; color: #333; border: 1px solid #999; }}
                                 table {{ width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }}
                                 th, td {{ padding: 5px; border: 1px solid #ddd; text-align: left; }}
                                 th {{ background: #f1f5f9; }}
                                 .right {{ text-align: right; }}
                                 .center {{ text-align: center; }}
-                                .dashed-line {{ border-bottom: 2px dashed #999; margin: 10px 0; text-align: center; font-size: 12px; color: #666; }}
                                 .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                                 @media print {{ .print-btn {{ display: none; }} body {{ padding: 0; }} }}
                             </style>
@@ -405,7 +396,7 @@ else:
                         """
                         components.html(reprint_html, height=600, scrolling=True)
                 else:
-                    v = st.warning("⚠️ No matching bills found.")
+                    st.warning("⚠️ No matching bills found.")
 
             st.markdown("---")
             st.markdown("### 📋 All Bills History")
@@ -417,9 +408,54 @@ else:
             st.dataframe(category_summary, use_container_width=True)
 
     elif menu == "Cash Book":
-        st.title("📒 Cash Book & Daily Ledger")
+        st.title("📒 Cash Book & Bank Deposits")
+        
+        # Calculate totals
+        total_revenue = sales_df["Total Amount"].sum() if not sales_df.empty else 0.0
+        total_deposited = cash_df["Deposit Amount (₹)"].sum() if not cash_df.empty else 0.0
+        hand_cash_balance = total_revenue - total_deposited
+        
+        # Display Metrics
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.metric(label="💵 Total Sales Collection", value=f"₹ {total_revenue:.2f}")
+        with col_m2:
+            st.metric(label="🏦 Total Bank Deposits", value=f"₹ {total_deposited:.2f}")
+        with col_m3:
+            st.metric(label="💰 Hand Cash Balance", value=f"₹ {hand_cash_balance:.2f}")
+            
+        st.markdown("---")
+        
+        # Add Bank Deposit Form
+        st.markdown("### ➕ Add Bank Deposit Entry")
+        with st.form("bank_deposit_form"):
+            col_d1, col_d2, col_d3 = st.columns(3)
+            with col_d1:
+                dep_date = st.date_input("Deposit Date", value=datetime.now())
+            with col_d2:
+                dep_desc = st.text_input("Description / Bank Name", value="Bank Deposit")
+            with col_d3:
+                dep_amount = st.number_input("Deposit Amount (₹)", min_value=1.0, value=1000.0)
+                
+            if st.form_submit_button("Save Bank Deposit"):
+                new_dep = pd.DataFrame([[str(dep_date), dep_desc, dep_amount]], columns=["Date", "Description", "Deposit Amount (₹)"])
+                cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
+                save_cash_deposits(cash_df)
+                st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} recorded successfully!")
+                st.rerun()
+                
+        st.markdown("### 🏦 Bank Deposit History")
+        if not cash_df.empty:
+            st.dataframe(cash_df, use_container_width=True)
+            if st.button("🗑️ Delete Last Deposit Record"):
+                if len(cash_df) > 0:
+                    cash_df = cash_df.iloc[:-1]
+                    save_cash_deposits(cash_df)
+                    st.success("Deleted last deposit record!")
+                    st.rerun()
+        else:
+            st.info("No bank deposits recorded yet.")
+
+        st.markdown("### 💰 Sales Revenue Transaction Ledger")
         if not sales_df.empty:
-            total_revenue = sales_df["Total Amount"].sum()
-            st.metric(label="💵 Total Cash Collected (Revenue)", value=f"₹ {total_revenue:.2f}")
-            st.markdown("### 💰 Transaction Ledger")
             st.dataframe(sales_df[["Date", "Bill No", "Customer Name", "Total Amount"]], use_container_width=True)
