@@ -10,31 +10,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom Traditional Styling & Print CSS Fixes
+# Custom Styles
 st.markdown("""
 <style>
-    .stApp {
-        background-color: #fdfbf7;
-    }
-    .css-1d391kg, [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e2e8f0;
-    }
-    .stButton>button {
-        background-color: #8b0000;
-        color: white;
-        border-radius: 6px;
-        font-weight: bold;
-        border: none;
-    }
-    .stButton>button:hover {
-        background-color: #5c0000;
-        color: white;
-    }
+    .stApp { background-color: #fdfbf7; }
+    .stButton>button { background-color: #8b0000; color: white; border-radius: 6px; font-weight: bold; border: none; }
+    .stButton>button:hover { background-color: #5c0000; color: white; }
     @media print {
         body * { visibility: hidden; }
-        #invoice-print-area, #invoice-print-area * { visibility: visible; }
-        #invoice-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+        .printable-bill, .printable-bill * { visibility: visible; }
+        .printable-bill { position: absolute; left: 0; top: 0; width: 100%; }
         .stSidebar, header, footer, .no-print { display: none !important; }
     }
 </style>
@@ -74,8 +59,8 @@ if not st.session_state["authenticated"]:
     st.markdown("""
     <div style="background: linear-gradient(135deg, #fffef9 0%, #f4ebd0 100%); border: 3px solid #8b0000; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 25px;">
         <div style="font-size: 55px; color: #b8860b; margin-bottom: -5px;">🕉️</div>
-        <h1 style="color: #8b0000; font-family: 'Georgia', serif; font-size: 44px; font-weight: bold; letter-spacing: 2px; margin: 10px 0 0 0;">SRI MANIKANTA TRADERS</h1>
-        <h2 style="color: #004d1a; font-family: 'Georgia', serif; font-size: 28px; font-weight: bold; letter-spacing: 5px; margin: 0 0 10px 0;">TRADERS</h2>
+        <h1 style="color: #8b0000; font-family: 'Georgia', serif; font-size: 44px; font-weight: bold; margin: 10px 0 0 0;">SRI MANIKANTA TRADERS</h1>
+        <h2 style="color: #004d1a; font-family: 'Georgia', serif; font-size: 28px; font-weight: bold; margin: 0 0 10px 0;">TRADERS</h2>
         <hr style="border: 0; height: 1px; background: #b8860b; width: 60%; margin: 15px auto;">
         <p style="color: #444; font-size: 15px; font-weight: 500; margin: 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
     </div>
@@ -85,13 +70,12 @@ if not st.session_state["authenticated"]:
     with col1:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("### 🙏 Welcome to Sri Manikanta Traders")
-        st.write("This application manages fertilizer, seeds, and agricultural inventory along with digital billing and cash book maintenance.")
-        st.info("💡 Please enter your credentials on the right side to access the secure management portal.")
+        st.write("Manage inventory, sales, and digital billing seamlessly.")
     with col2:
         with st.container():
             st.markdown("### 🔐 ADMIN LOGIN")
-            username = st.text_input("Username", placeholder="Enter your username")
-            password = st.text_input("Password", type="password", placeholder="Enter your password")
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
             if st.button("Sign In", use_container_width=True):
                 if username == "admin" and password == "samsri2528":
                     st.session_state["authenticated"] = True
@@ -188,57 +172,69 @@ else:
                 else:
                     st.warning("⚠️ Please enter Customer Name.")
 
-        # Display Invoice & Print Instructions if bill is generated
+        # Display Bill Copies cleanly using structured containers
         if "last_bill" in st.session_state:
             b = st.session_state["last_bill"]
             st.markdown("---")
             st.markdown("### 🖨️ Bill Ready for Print")
-            st.info("💡 ప్రింట్ చేయడానికి మీ కీబోర్డ్ మీద **Ctrl + P** నొక్కండి. రైతు కాపీ మరియు స్టోర్ కాపీ రెండూ ఒకే పేపర్‌లో పర్ఫెక్ట్‌గా వస్తాయి!")
+            st.info("💡 కీబోర్డ్ మీద **Ctrl + P** నొక్కి ప్రింట్ చేయండి. రైతు కాపీ మరియు స్టోర్ కాపీ రెండూ కనిపిస్తాయి!")
             
-            bill_html = f"""
-            <div id="invoice-print-area" style="background: white; padding: 10px; color: black; font-family: Arial, sans-serif; font-size: 11px;">
-                <!-- FARMER COPY -->
-                <div style="border: 2px solid #8b0000; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
-                    <h3 style="text-align: center; color: #8b0000; margin: 0; font-size: 15px;">🕉️ SRI MANIKANTA TRADERS</h3>
-                    <p style="text-align: center; font-size: 10px; margin: 1px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                    <p style="text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 3px 0; padding: 2px; font-size: 11px; border: 1px solid #b8860b;">FARMER COPY</p>
-                    <hr style="margin: 3px 0;">
-                    <table width="100%" style="font-size: 11px;">
-                        <tr><td><b>Bill No:</b> {b['bill_no']}</td><td><b>Date:</b> {b['date']}</td></tr>
-                        <tr><td><b>Customer:</b> {b['cust_name']}</td><td><b>Mobile:</b> {b['mobile']}</td></tr>
-                    </table>
-                    <hr style="margin: 3px 0;">
-                    <table width="100%" style="border-collapse: collapse; font-size: 11px;" border="1">
-                        <tr style="background: #f1f5f9;"><th style="padding: 3px;">Item Name</th><th style="padding: 3px;">Qty</th><th style="padding: 3px;">Price</th><th style="padding: 3px;">Total</th></tr>
-                        <tr><td style="padding: 3px;">{b['item']}</td><td style="padding: 3px; text-align: center;">{b['qty']}</td><td style="padding: 3px; text-align: right;">₹{b['price']}</td><td style="padding: 3px; text-align: right;">₹{b['total']}</td></tr>
-                    </table>
-                    <h4 style="text-align: right; margin: 4px 0 0 0; font-size: 12px; color: #8b0000;">Grand Total: ₹ {b['total']:.2f}</h4>
-                    <p style="text-align: center; font-size: 9px; margin: 2px 0 0 0;">Thank you! Visit Again. 🌾</p>
-                </div>
+            # Printable Container Start
+            st.markdown('<div class="printable-bill">', unsafe_allow_html=True)
+            
+            # --- FARMER COPY ---
+            with st.container():
+                st.markdown("""
+                <div style="border: 2px solid #8b0000; padding: 12px; border-radius: 6px; background: white; margin-bottom: 10px;">
+                    <h3 style="text-align: center; color: #8b0000; margin: 0;">🕉️ SRI MANIKANTA TRADERS</h3>
+                    <p style="text-align: center; font-size: 11px; margin: 2px 0; color: black;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                    <p style="text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 5px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b;">FARMER COPY</p>
+                """, unsafe_allow_html=True)
+                
+                col_f1, col_f2 = st.columns(2)
+                with col_f1:
+                    st.markdown(f"**Bill No:** {b['bill_no']}")
+                    st.markdown(f"**Customer:** {b['cust_name']}")
+                with col_f2:
+                    st.markdown(f"**Date:** {b['date']}")
+                    st.markdown(f"**Mobile:** {b['mobile']}")
+                
+                bill_item_df = pd.DataFrame([{
+                    "Item Name": b['item'],
+                    "Qty": b['qty'],
+                    "Price (₹)": b['price'],
+                    "Total (₹)": b['total']
+                }])
+                st.dataframe(bill_item_df, use_container_width=True, hide_index=True)
+                st.markdown(f"<h4 style='text-align: right; color: #8b0000;'>Grand Total: ₹ {b['total']:.2f}</h4>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; font-size: 10px; color: black;'>Thank you! Visit Again. 🌾</p></div>", unsafe_allow_html=True)
 
-                <div style="border-bottom: 1.5px dashed #666; margin: 6px 0; text-align: center; font-size: 10px; color: #666;">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>
+            # Divider line between copies
+            st.markdown("<div style='border-bottom: 2px dashed #999; margin: 15px 0; text-align: center; font-size: 12px; color: #666;'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>", unsafe_allow_html=True)
 
-                <!-- STORE COPY -->
-                <div style="border: 2px solid #333; padding: 8px; border-radius: 4px;">
-                    <h3 style="text-align: center; color: #333; margin: 0; font-size: 15px;">SRI MANIKANTA TRADERS</h3>
-                    <p style="text-align: center; font-size: 10px; margin: 1px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                    <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 3px 0; padding: 2px; font-size: 11px;">STORE COPY</p>
-                    <hr style="margin: 3px 0;">
-                    <table width="100%" style="font-size: 11px;">
-                        <tr><td><b>Bill No:</b> {b['bill_no']}</td><td><b>Date:</b> {b['date']}</td></tr>
-                        <tr><td><b>Customer:</b> {b['cust_name']}</td><td><b>Mobile:</b> {b['mobile']}</td></tr>
-                    </table>
-                    <hr style="margin: 3px 0;">
-                    <table width="100%" style="border-collapse: collapse; font-size: 11px;" border="1">
-                        <tr style="background: #f1f5f9;"><th style="padding: 3px;">Item Name</th><th style="padding: 3px;">Qty</th><th style="padding: 3px;">Price</th><th style="padding: 3px;">Total</th></tr>
-                        <tr><td style="padding: 3px;">{b['item']}</td><td style="padding: 3px; text-align: center;">{b['qty']}</td><td style="padding: 3px; text-align: right;">₹{b['price']}</td><td style="padding: 3px; text-align: right;">₹{b['total']}</td></tr>
-                    </table>
-                    <h4 style="text-align: right; margin: 4px 0 0 0; font-size: 12px;">Grand Total: ₹ {b['total']:.2f}</h4>
-                    <p style="text-align: center; font-size: 9px; margin: 2px 0 0 0;">Store Office Copy</p>
-                </div>
-            </div>
-            """
-            st.markdown(bill_html, unsafe_allow_html=True)
+            # --- STORE COPY ---
+            with st.container():
+                st.markdown("""
+                <div style="border: 2px solid #333; padding: 12px; border-radius: 6px; background: white;">
+                    <h3 style="text-align: center; color: #333; margin: 0;">SRI MANIKANTA TRADERS</h3>
+                    <p style="text-align: center; font-size: 11px; margin: 2px 0; color: black;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                    <p style="text-align: center; font-weight: bold; background: #e2e8f0; color: #333; margin: 5px 0; padding: 3px; font-size: 12px;">STORE COPY</p>
+                """, unsafe_allow_html=True)
+                
+                col_s1, col_s2 = st.columns(2)
+                with col_s1:
+                    st.markdown(f"**Bill No:** {b['bill_no']}")
+                    st.markdown(f"**Customer:** {b['cust_name']}")
+                with col_s2:
+                    st.markdown(f"**Date:** {b['date']}")
+                    st.markdown(f"**Mobile:** {b['mobile']}")
+                
+                st.dataframe(bill_item_df, use_container_width=True, hide_index=True)
+                st.markdown(f"<h4 style='text-align: right; color: #333;'>Grand Total: ₹ {b['total']:.2f}</h4>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; font-size: 10px; color: black;'>Store Office Copy</p></div>", unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            # Printable Container End
 
     elif menu == "Sales History & Reports":
         st.title("📊 Total Bills & Category Sales Report")
