@@ -40,7 +40,6 @@ def load_sales():
     if os.path.exists(SALES_FILE):
         df = pd.read_excel(SALES_FILE)
         if not df.empty and "Date" in df.columns:
-            # Normalize old date formats to DD-MM-YYYY
             df["Date"] = pd.to_datetime(df["Date"], errors='coerce').dt.strftime('%d-%m-%Y').fillna(df["Date"])
         return df
     else:
@@ -230,10 +229,8 @@ else:
             next_bill_no = f"SMT-{len(sales_df['Bill No'].unique())+1:03d}" if not sales_df.empty else "SMT-001"
             bill_no = st.text_input("Bill No", value=next_bill_no)
         with col_b2:
-            # Custom display label for date input or formatted string display
-            bill_date_input = st.date_input("Date", value=datetime.now())
-            bill_date_str = bill_date_input.strftime("%d-%m-%Y")
-            st.caption(f"Selected Date: **{bill_date_str}**")
+            # Explicit DD-MM-YYYY format text input
+            bill_date_str = st.text_input("Date (DD-MM-YYYY)", value=datetime.now().strftime('%d-%m-%Y'))
         with col_b3:
             mobile_no = st.text_input("Mobile No (10 Digits)", max_chars=10)
             
@@ -523,9 +520,7 @@ else:
         with st.form("bank_deposit_form"):
             col_d1, col_d2 = st.columns(2)
             with col_d1:
-                dep_date_input = st.date_input("Deposit Date", value=datetime.now())
-                dep_date_str = dep_date_input.strftime("%d-%m-%Y")
-                st.caption(f"Selected Date: **{dep_date_str}**")
+                dep_date_str = st.text_input("Deposit Date (DD-MM-YYYY)", value=datetime.now().strftime('%d-%m-%Y'), key="dep_date_txt_input")
                 dep_desc = st.text_input("Description / Bank Name", value="Bank Deposit")
             with col_d2:
                 dep_amount = st.number_input("Deposit Amount (₹)", min_value=1.0, value=1000.0)
