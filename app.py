@@ -1,3 +1,4 @@
+import io
 import os
 import pandas as pd
 import streamlit as st
@@ -226,69 +227,98 @@ else:
       grand_total = cart_df["Total Amount"].sum()
       st.markdown(f"### 💰 Grand Total: ₹ {grand_total:,.2f}")
 
-      if st.button("💾 Save Bill & Complete Sale"):
-        if not customer_name:
-          st.warning("⚠️ Please enter Customer Name.")
-        else:
-          new_sales_rows = []
-          for item in st.session_state["cart"]:
-            new_sales_rows.append({
-                "Bill No": bill_no,
-                "Date": bill_date,
-                "Customer Name": customer_name,
-                "Mobile": customer_mobile,
-                "Item Name": item["Item Name"],
-                "Quantity": item["Quantity"],
-                "Price": item["Price"],
-                "Total Amount": item["Total Amount"],
-                "Aadhaar No": aadhaar_no,
-                "Village": village_name,
-            })
+      col_act1, col_act2 = st.columns(2)
+      with col_act1:
+        if st.button("💾 Save Bill & Complete Sale"):
+          if not customer_name:
+            st.warning("⚠️ Please enter Customer Name.")
+          else:
+            new_sales_rows = []
+            for item in st.session_state["cart"]:
+              new_sales_rows.append({
+                  "Bill No": bill_no,
+                  "Date": bill_date,
+                  "Customer Name": customer_name,
+                  "Mobile": customer_mobile,
+                  "Item Name": item["Item Name"],
+                  "Quantity": item["Quantity"],
+                  "Price": item["Price"],
+                  "Total Amount": item["Total Amount"],
+                  "Aadhaar No": aadhaar_no,
+                  "Village": village_name,
+              })
 
-            # Deduct from Inventory
-            inv_df.loc[
-                inv_df["Item Name"] == item["Item Name"], "Quantity"
-            ] -= item["Quantity"]
+              inv_df.loc[
+                  inv_df["Item Name"] == item["Item Name"], "Quantity"
+              ] -= item["Quantity"]
 
-          save_inventory(inv_df)
+            save_inventory(inv_df)
 
-          # Append to sales history
-          updated_sales_df = pd.concat(
-              [sales_df, pd.DataFrame(new_sales_rows)], ignore_index=True
-          )
-          save_sales(updated_sales_df)
+            updated_sales_df = pd.concat(
+                [sales_df, pd.DataFrame(new_sales_rows)], ignore_index=True
+            )
+            save_sales(updated_sales_df)
 
-          # Automatically add total sale amount to Cash Book ledger
-          if "Bill No" not in cash_df.columns:
-            cash_df["Bill No"] = ""
+            if "Bill No" not in cash_df.columns:
+              cash_df["Bill No"] = ""
 
-          new_cash_row = pd.DataFrame(
-              [[
-                  bill_date,
-                  f"Bill Collection - {customer_name} ({bill_no})",
-                  grand_total,
-                  "Sales Bill",
-                  bill_no,
-              ]],
-              columns=[
-                  "Date",
-                  "Description",
-                  "Deposit Amount (₹)",
-                  "Receipt Name",
-                  "Bill No",
-              ],
-          )
-          updated_cash_df = pd.concat(
-              [cash_df, new_cash_row], ignore_index=True
-          )
-          save_cash_deposits(updated_cash_df)
+            new_cash_row = pd.DataFrame(
+                [[
+                    bill_date,
+                    f"Bill Collection - {customer_name} ({bill_no})",
+                    grand_total,
+                    "Sales Bill",
+                    bill_no,
+                ]],
+                columns=[
+                    "Date",
+                    "Description",
+                    "Deposit Amount (₹)",
+                    "Receipt Name",
+                    "Bill No",
+                ],
+            )
+            updated_cash_df = pd.concat(
+                [cash_df, new_cash_row], ignore_index=True
+            )
+            save_cash_deposits(updated_cash_df)
 
-          st.session_state["cart"] = []
-          st.success(
-              f"🎉 Bill {bill_no} saved, stock updated, and cash book"
-              " credited!"
-          )
-          st.rerun()
+            st.session_state["cart"] = []
+            st.success(
+                f"🎉 Bill {bill_no} saved, stock updated, and cash book"
+                " credited!"
+            )
+            st.rerun()
+
+      with col_act2:
+        # Print / Download Bill format
+        bill_text = f"""
+        ========================================
+                SRI MANIKANTA TRADERS
+        D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal
+        Ph: 7995217343
+        ========================================
+        Bill No   : {bill_no}
+        Date      : {bill_date}
+        Customer  : {customer_name}
+        Mobile    : {customer_mobile}
+        Village   : {village_name}
+        Aadhaar   : {aadhaar_no}
+        ----------------------------------------
+        """
+        for item in st.session_state["cart"]:
+          bill_text += f"{item['Item Name']} | Qty: {item['Quantity']} | Price: ₹{item['Price']} | Total: ₹{item['Total Amount']}\n"
+        bill_text += f"----------------------------------------\n"
+        bill_text += f"GRAND TOTAL: ₹ {grand_total:,.2f}\n"
+        bill_text += f"========================================\n"
+        bill_text += f"Thank You! Visit Again.\n"
+
+        st.download_button(
+            label="🖨️ Print / Download Bill Text",
+            data=bill_text,
+            file_name=f"{bill_no}_{customer_name}.txt",
+            mime="text/plain",
+        )
 
   # 2. Manage Inventory Module
   elif menu == "Manage Inventory":
@@ -334,7 +364,7 @@ else:
     st.markdown("### 📦 Current Stock List")
     st.dataframe(inv_df, use_container_width=True)
 
-  # 3. Closing Stock Module
+  # 3. Closing Stock Module (With Excel & CSV Download)
   elif menu == "Present / Closing Stock":
     st.markdown(
         """
@@ -351,7 +381,29 @@ else:
       total_val = (inv_df["Quantity"] * inv_df["Price (₹)"]).sum()
       st.markdown(f"### 💎 Total Stock Valuation: ₹ {total_val:,.2f}")
 
-  # 4. Sales History & Delete Bill Module (With Auto Stock & Cash Book Restore)
+      # Download Excel / CSV buttons
+      col_dl1, col_dl2 = st.columns(2)
+      with col_dl1:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+          inv_df.to_excel(writer, index=False, sheet_name="Closing Stock")
+        excel_data = output.getvalue()
+        st.download_button(
+            label="📥 Download Closing Stock as Excel",
+            data=excel_data,
+            file_name=f"Closing_Stock_{pd.Timestamp.now().strftime('%d-%m-%Y')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+      with col_dl2:
+        csv_data = inv_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="📥 Download Closing Stock as CSV",
+            data=csv_data,
+            file_name=f"Closing_Stock_{pd.Timestamp.now().strftime('%d-%m-%Y')}.csv",
+            mime="text/csv",
+        )
+
+  # 4. Sales History & Delete Bill Module
   elif menu == "Sales History & Reports":
     st.markdown(
         """
@@ -369,7 +421,6 @@ else:
       bill_to_delete = st.selectbox("Select Bill No to Delete", unique_bills)
 
       if st.button("⚠️ Delete Bill & Auto-Update Stock & Cash Book"):
-        # 1. Restore Stock
         bill_items = sales_df[sales_df["Bill No"] == bill_to_delete]
         inv_df = load_inventory()
 
@@ -382,16 +433,13 @@ else:
             )
         save_inventory(inv_df)
 
-        # 2. Remove from Sales History
         sales_df = sales_df[sales_df["Bill No"] != bill_to_delete]
         save_sales(sales_df)
 
-        # 3. Remove/Update Cash Book entry corresponding to this Bill No
         cash_df = load_cash_deposits()
         if "Bill No" in cash_df.columns:
           cash_df = cash_df[cash_df["Bill No"] != bill_to_delete]
         else:
-          # Fallback matching description if old data
           cash_df = cash_df[~cash_df["Description"].str.contains(bill_to_delete)]
         save_cash_deposits(cash_df)
 
@@ -406,7 +454,7 @@ else:
     else:
       st.info("No sales records found.")
 
-  # 5. Cash Book Module
+  # 5. Cash Book Module (With Net Balance)
   elif menu == "Cash Book":
     st.markdown(
         """
@@ -451,7 +499,6 @@ else:
         st.rerun()
 
     st.markdown("### 📊 Bank Deposit History & Receipts")
-    # Clean display columns for user interface
     display_cash_df = (
         cash_df[["Date", "Description", "Deposit Amount (₹)", "Receipt Name"]]
         if "Receipt Name" in cash_df.columns
@@ -461,4 +508,7 @@ else:
 
     if not cash_df.empty and "Deposit Amount (₹)" in cash_df.columns:
       total_deposit = cash_df["Deposit Amount (₹)"].sum()
-      st.markdown(f"### 💰 Total Bank Deposits: ₹ {total_deposit:,.2f}")
+      st.markdown(
+          f"### 💎 Total Net Cash Balance (Closing Balance): ₹"
+          f" {total_deposit:,.2f}"
+      )
