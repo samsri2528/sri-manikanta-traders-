@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from datetime import datetime
 import streamlit.components.v1 as components
+import base64
 
 # Page Configuration
 st.set_page_config(
@@ -51,7 +52,7 @@ def load_cash_deposits():
     if os.path.exists(CASH_BOOK_FILE):
         return pd.read_excel(CASH_BOOK_FILE)
     else:
-        df = pd.DataFrame(columns=["Date", "Description", "Deposit Amount (₹)"])
+        df = pd.DataFrame(columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
         df.to_excel(CASH_BOOK_FILE, index=False)
         return df
 
@@ -426,27 +427,59 @@ else:
             
         st.markdown("---")
         
-        # Add Bank Deposit Form
-        st.markdown("### ➕ Add Bank Deposit Entry")
+        # Add Bank Deposit Form with Receipt Attachment
+        st.markdown("### ➕ Add Bank Deposit Entry & Attach Receipt")
         with st.form("bank_deposit_form"):
-            col_d1, col_d2, col_d3 = st.columns(3)
+            col_d1, col_d2 = st.columns(2)
             with col_d1:
                 dep_date = st.date_input("Deposit Date", value=datetime.now())
-            with col_d2:
                 dep_desc = st.text_input("Description / Bank Name", value="Bank Deposit")
-            with col_d3:
+            with col_d2:
                 dep_amount = st.number_input("Deposit Amount (₹)", min_value=1.0, value=1000.0)
+                receipt_file = st.file_uploader("📎 Upload Deposit Receipt / Slip (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"])
                 
-            if st.form_submit_button("Save Bank Deposit"):
-                new_dep = pd.DataFrame([[str(dep_date), dep_desc, dep_amount]], columns=["Date", "Description", "Deposit Amount (₹)"])
+            if st.form_submit_button("Save Bank Deposit & Receipt"):
+                receipt_name = "No Receipt"
+                if receipt_file is not None:
+                    receipt_name = receipt_file.name
+                    # Save receipt to local folder
+                    os.makedirs("receipts", exist_ok=True)
+                    with open(os.path.join("receipts", receipt_file.name), "wb") as f:
+                        f.write(receipt_file.getbuffer())
+
+                new_dep = pd.DataFrame([[str(dep_date), dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
                 cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
                 save_cash_deposits(cash_df)
-                st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} recorded successfully!")
+                st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt recorded successfully!")
                 st.rerun()
                 
-        st.markdown("### 🏦 Bank Deposit History")
+        st.markdown("### 🏦 Bank Deposit History & Receipts")
         if not cash_df.empty:
-            st.dataframe(cash_df, use_container_width=True)
+            for idx, row in cash_df.iterrows():
+                with st.expander(f"📅 Date: {row['Date']} | 🏦 {row['Description']} | Amount: ₹ {row['Deposit Amount (₹)']} | Receipt: {row['Receipt Name']}"):
+                    col_r1, col_r2 = st.columns([2, 1])
+                    with col_r1:
+                        st.write(f"**Deposit Date:** {row['Date']}")
+                        st.write(f"**Bank / Description:** {row['Description']}")
+                        st.write(f"**Amount Deposited:** ₹ {row['Deposit Amount (₹)']}")
+                        st.write(f"**Attached File:** {row['Receipt Name']}")
+                    with col_r2:
+                        rec_path = os.path.join("receipts", str(row['Receipt Name']))
+                        if row['Receipt Name'] != "No Receipt" and os.path.exists(rec_path):
+                            if row['Receipt Name'].lower().endswith(('.png', '.jpg', '.jpeg')):
+                                st.image(rec_path, caption="Deposit Receipt", width=250)
+                            with open(rec_path, "rb") as file_btn:
+                                st.download_button(
+                                    label="📥 Download Receipt",
+                                    data=file_btn,
+                                    file_name=row['Receipt Name'],
+                                    mime="application/octet-stream",
+                                    key=f"dl_rec_{idx}"
+                                )
+                        else:
+                            st.info("No receipt uploaded for this entry.")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("🗑️ Delete Last Deposit Record"):
                 if len(cash_df) > 0:
                     cash_df = cash_df.iloc[:-1]
