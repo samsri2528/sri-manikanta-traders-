@@ -41,9 +41,12 @@ def load_sales():
         df = pd.read_excel(SALES_FILE)
         if not df.empty and "Date" in df.columns:
             df["Date"] = pd.to_datetime(df["Date"], errors='coerce').dt.strftime('%d-%m-%Y').fillna(df["Date"])
+        # Ensure Aadhaar column exists in old files
+        if "Aadhaar No" not in df.columns:
+            df["Aadhaar No"] = ""
         return df
     else:
-        df = pd.DataFrame(columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
+        df = pd.DataFrame(columns=["Bill No", "Date", "Customer Name", "Village", "Mobile", "Aadhaar No", "Item Name", "Quantity", "Price", "Total Amount"])
         df.to_excel(SALES_FILE, index=False)
         return df
 
@@ -229,18 +232,32 @@ else:
             next_bill_no = f"SMT-{len(sales_df['Bill No'].unique())+1:03d}" if not sales_df.empty else "SMT-001"
             bill_no = st.text_input("Bill No", value=next_bill_no)
         with col_b2:
-            # Explicit DD-MM-YYYY format text input
             bill_date_str = st.text_input("Date (DD-MM-YYYY)", value=datetime.now().strftime('%d-%m-%Y'))
         with col_b3:
             mobile_no = st.text_input("Mobile No (10 Digits)", max_chars=10)
             
         default_cust_name = ""
+        default_village = "Pedda Harivanam"
+        default_aadhaar = ""
+        
         if mobile_no and len(mobile_no) == 10 and not sales_df.empty:
             match = sales_df[sales_df["Mobile"].astype(str) == str(mobile_no)]
             if not match.empty:
                 default_cust_name = match.iloc[-1]["Customer Name"]
+                if "Village" in match.columns:
+                    default_village = match.iloc[-1]["Village"]
+                if "Aadhaar No" in match.columns:
+                    default_aadhaar = str(match.iloc[-1]["Aadhaar No"])
+                    if default_aadhaar == "nan":
+                        default_aadhaar = ""
 
-        cust_name = st.text_input("Customer / Farmer Name", value=default_cust_name)
+        col_c1, col_c2, col_c3 = st.columns(3)
+        with col_c1:
+            cust_name = st.text_input("Customer / Farmer Name", value=default_cust_name)
+        with col_c2:
+            village_name = st.text_input("Village Name", value=default_village)
+        with col_c3:
+            aadhaar_no = st.text_input("Aadhaar No (Optional)", value=default_aadhaar, max_chars=12)
 
         st.markdown("### 🛒 Add Items to Bill Cart")
         if inventory_df.empty:
@@ -296,9 +313,9 @@ else:
                         if cust_name and mobile_no:
                             for item in st.session_state["cart"]:
                                 new_sale = pd.DataFrame([[
-                                    bill_no, bill_date_str, cust_name, str(mobile_no), 
+                                    bill_no, bill_date_str, cust_name, village_name, str(mobile_no), str(aadhaar_no),
                                     item["Item Name"], item["Qty"], item["Price"], item["Total"]
-                                ]], columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
+                                ]], columns=["Bill No", "Date", "Customer Name", "Village", "Mobile", "Aadhaar No", "Item Name", "Quantity", "Price", "Total Amount"])
                                 sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
                                 
                                 idx = inventory_df[inventory_df["Item Name"] == item["Item Name"]].index
@@ -313,7 +330,9 @@ else:
                                 "bill_no": bill_no,
                                 "date": bill_date_str,
                                 "cust_name": cust_name,
+                                "village": village_name,
                                 "mobile": str(mobile_no),
+                                "aadhaar": str(aadhaar_no),
                                 "items": st.session_state["cart"].copy(),
                                 "grand_total": grand_total
                             }
@@ -372,7 +391,8 @@ else:
                         <hr style="margin: 5px 0;">
                         <table style="border:none;">
                             <tr style="border:none;"><td style="border:none;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none;"><b>Date:</b> {b['date']}</td></tr>
-                            <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none;"><b>Mobile:</b> {b['mobile']}</td></tr>
+                            <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none;"><b>Village:</b> {b['village']}</td></tr>
+                            <tr style="border:none;"><td style="border:none;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
                         </table>
                         <table>
                             <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
@@ -388,7 +408,8 @@ else:
                         <hr style="margin: 5px 0;">
                         <table style="border:none;">
                             <tr style="border:none;"><td style="border:none;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none;"><b>Date:</b> {b['date']}</td></tr>
-                            <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none;"><b>Mobile:</b> {b['mobile']}</td></tr>
+                            <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none;"><b>Village:</b> {b['village']}</td></tr>
+                            <tr style="border:none;"><td style="border:none;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
                         </table>
                         <table>
                             <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
@@ -400,19 +421,19 @@ else:
             </body>
             </html>
             """
-            components.html(complete_invoice_html, height=750, scrolling=True)
+            components.html(complete_invoice_html, height=780, scrolling=True)
 
     elif menu == "Sales History & Reports":
         st.title("📊 Sales History & Bill Reprint")
         if not sales_df.empty:
-            # Reverse DataFrame to show newest bills on top
             display_sales_df = sales_df.iloc[::-1].reset_index(drop=True)
 
             st.markdown("### 🔍 Search & Reprint Old Bill")
-            search_query = st.text_input("Enter Bill No (e.g. SMT-001) or Farmer Mobile No to Reprint:")
+            search_query = st.text_input("Enter Bill No, Customer Name or Mobile No to Reprint:")
             
             if search_query:
                 filtered_bills = display_sales_df[(display_sales_df["Bill No"].str.contains(search_query, case=False, na=False)) | 
+                                                  (display_sales_df["Customer Name"].str.contains(search_query, case=False, na=False)) |
                                                   (display_sales_df["Mobile"].astype(str).str.contains(search_query, na=False))]
                 if not filtered_bills.empty:
                     unique_matched_bills = filtered_bills["Bill No"].unique()
@@ -422,7 +443,11 @@ else:
                         bill_rows = sales_df[sales_df["Bill No"] == selected_reprint_bill]
                         b_date = bill_rows.iloc[0]["Date"]
                         b_cust = bill_rows.iloc[0]["Customer Name"]
+                        b_vill = bill_rows.iloc[0]["Village"] if "Village" in bill_rows.columns else "Pedda Harivanam"
                         b_mob = bill_rows.iloc[0]["Mobile"]
+                        b_aadhaar = bill_rows.iloc[0]["Aadhaar No"] if "Aadhaar No" in bill_rows.columns else ""
+                        if pd.isna(b_aadhaar):
+                            b_aadhaar = ""
                         
                         reprint_items = []
                         for _, row in bill_rows.iterrows():
@@ -474,7 +499,8 @@ else:
                                     <hr style="margin: 5px 0;">
                                     <table style="border:none;">
                                         <tr style="border:none;"><td style="border:none;"><b>Bill No:</b> {selected_reprint_bill}</td><td style="border:none;"><b>Date:</b> {b_date}</td></tr>
-                                        <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b_cust}</td><td style="border:none;"><b>Mobile:</b> {b_mob}</td></tr>
+                                        <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b_cust}</td><td style="border:none;"><b>Village:</b> {b_vill}</td></tr>
+                                        <tr style="border:none;"><td style="border:none;"><b>Mobile:</b> {b_mob}</td><td style="border:none;"><b>Aadhaar:</b> {b_aadhaar if b_aadhaar else 'N/A'}</td></tr>
                                     </table>
                                     <table>
                                         <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
@@ -486,7 +512,7 @@ else:
                         </body>
                         </html>
                         """
-                        components.html(reprint_html, height=600, scrolling=True)
+                        components.html(reprint_html, height=620, scrolling=True)
                 else:
                     st.warning("⚠️ No matching bills found.")
 
@@ -582,4 +608,5 @@ else:
         st.markdown("### 💰 Sales Revenue Transaction Ledger")
         if not sales_df.empty:
             display_sales_ledger = sales_df.iloc[::-1].reset_index(drop=True)
-            st.dataframe(display_sales_ledger[["Date", "Bill No", "Customer Name", "Total Amount"]], use_container_width=True)
+            cols_to_show = [c for c in ["Date", "Bill No", "Customer Name", "Village", "Total Amount"] if c in display_sales_ledger.columns]
+            st.dataframe(display_sales_ledger[cols_to_show], use_container_width=True)
