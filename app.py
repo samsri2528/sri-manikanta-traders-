@@ -10,6 +10,30 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom Traditional Styling & Theme matching your design image
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #fdfbf7;
+    }
+    .css-1d391kg, [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
+    }
+    .stButton>button {
+        background-color: #8b0000;
+        color: white;
+        border-radius: 6px;
+        font-weight: bold;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #5c0000;
+        color: white;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Data Files
 INVENTORY_FILE = "inventory.xlsx"
 SALES_FILE = "sales_history.xlsx"
@@ -41,16 +65,26 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
+    # Traditional Header Banner matching your design image
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #fffef9 0%, #f4ebd0 100%); border: 3px solid #8b0000; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 25px;">
+        <div style="font-size: 55px; color: #b8860b; margin-bottom: -5px;">🕉️</div>
+        <h1 style="color: #8b0000; font-family: 'Georgia', serif; font-size: 44px; font-weight: bold; letter-spacing: 2px; margin: 10px 0 0 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">SRI MANIKANTA TRADERS</h1>
+        <h2 style="color: #004d1a; font-family: 'Georgia', serif; font-size: 28px; font-weight: bold; letter-spacing: 5px; margin: 0 0 10px 0;">TRADERS</h2>
+        <hr style="border: 0; height: 1px; background: #b8860b; width: 60%; margin: 15px auto;">
+        <p style="color: #444; font-size: 15px; font-weight: 500; margin: 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+    </div>
+    """, unsafe_allow_html=True)
+
     col1, col2 = st.columns([1.2, 1])
     with col1:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown('<p style="font-size:38px; font-weight:bold; color:#1b4d3e;">🌾 SRI MANIKANTA TRADERS</p>', unsafe_allow_html=True)
-        st.markdown('<p style="font-size:16px; color:#555;">Advanced Inventory & Billing Management System<br>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal</p>', unsafe_allow_html=True)
-        st.info("💡 Secure access for authorized personnel only. Please sign in with your credentials.")
-    with col2:
         st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 🙏 Welcome to Sri Manikanta Traders")
+        st.write("This application manages fertilizer, seeds, and agricultural inventory along with digital billing and cash book maintenance.")
+        st.info("💡 Please enter your credentials on the right side to access the secure management portal.")
+    with col2:
         with st.container():
-            st.markdown("### 🔐 LOGIN")
+            st.markdown("### 🔐 ADMIN LOGIN")
             username = st.text_input("Username", placeholder="Enter your username")
             password = st.text_input("Password", type="password", placeholder="Enter your password")
             if st.button("Sign In", use_container_width=True):
@@ -166,15 +200,15 @@ else:
             b = st.session_state["last_bill"]
             st.markdown("---")
             st.markdown("### 🖨️ Bill Ready for Print")
-            st.info("💡 ప్రింట్ చేయడానికి మీ కీబోర్డ్ మీద **Ctrl + P** నొక్కండి (లేదా బ్రౌజర్ మెనూలో Print ఆప్షన్ క్లిక్ చేయండి). సైడ్‌బార్ లేదా ఇతర యాప్ మెనూలు ప్రింట్‌లో రావు, కేవలం ఈ రెండు కాపీల బిల్లు మాత్రమే వస్తుంది!")
+            st.info("💡 ప్రింట్ చేయడానికి మీ కీబోర్డ్ మీద **Ctrl + P** నొక్కండి. కేవలం రైతు కాపీ మరియు స్టోర్ కాపీ మాత్రమే A4 పేపర్‌లో వస్తుంది!")
             
             bill_html = f"""
-            <div id="invoice-print-area" style="background: white; padding: 15px; color: black; font-family: Arial, sans-serif; border: 1px solid #ccc;">
+            <div id="invoice-print-area" style="background: white; padding: 15px; color: black; font-family: Arial, sans-serif; border: 1px solid #ccc; border-radius: 8px;">
                 <!-- FARMER COPY -->
-                <div style="border: 2px solid #1b4d3e; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                    <h3 style="text-align: center; color: #1b4d3e; margin: 0;">SRI MANIKANTA TRADERS</h3>
+                <div style="border: 2px solid #8b0000; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                    <h3 style="text-align: center; color: #8b0000; margin: 0;">🕉️ SRI MANIKANTA TRADERS</h3>
                     <p style="text-align: center; font-size: 11px; margin: 2px 0;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                    <p style="text-align: center; font-weight: bold; background: #e2e8f0; margin: 5px 0; padding: 3px; font-size: 12px;">FARMER COPY</p>
+                    <p style="text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 5px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b;">FARMER COPY</p>
                     <hr style="margin: 5px 0;">
                     <table width="100%" style="font-size: 12px;">
                         <tr><td><b>Bill No:</b> {b['bill_no']}</td><td><b>Date:</b> {b['date']}</td></tr>
@@ -185,7 +219,7 @@ else:
                         <tr style="background: #f1f5f9;"><th style="padding: 4px;">Item Name</th><th style="padding: 4px;">Qty</th><th style="padding: 4px;">Price</th><th style="padding: 4px;">Total</th></tr>
                         <tr><td style="padding: 4px;">{b['item']}</td><td style="padding: 4px; text-align: center;">{b['qty']}</td><td style="padding: 4px; text-align: right;">₹{b['price']}</td><td style="padding: 4px; text-align: right;">₹{b['total']}</td></tr>
                     </table>
-                    <h4 style="text-align: right; margin: 6px 0 0 0; font-size: 14px;">Grand Total: ₹ {b['total']:.2f}</h4>
+                    <h4 style="text-align: right; margin: 6px 0 0 0; font-size: 14px; color: #8b0000;">Grand Total: ₹ {b['total']:.2f}</h4>
                     <p style="text-align: center; font-size: 10px; margin: 4px 0 0 0;">Thank you! Visit Again. 🌾</p>
                 </div>
 
