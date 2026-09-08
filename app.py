@@ -46,9 +46,12 @@ def load_sales():
 def save_sales(df):
     df.to_excel(SALES_FILE, index=False)
 
-# Session State Authentication
+# Session State Authentication & Cart
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
+
+if "cart" not in st.session_state:
+    st.session_state["cart"] = []
 
 if not st.session_state["authenticated"]:
     st.markdown("""
@@ -83,6 +86,7 @@ else:
     
     if st.sidebar.button("Logout"):
         st.session_state["authenticated"] = False
+        st.session_state["cart"] = []
         st.rerun()
         
     inventory_df = load_inventory()
@@ -113,7 +117,7 @@ else:
             st.dataframe(inventory_df, use_container_width=True)
 
     elif menu == "Billing & Sales":
-        st.title("🧾 Sales Invoice & Billing")
+        st.title("🧾 Sales Invoice & Billing (Multiple Items)")
         st.write("D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343")
         st.markdown("---")
         
@@ -128,50 +132,91 @@ else:
             
         cust_name = st.text_input("Customer / Farmer Name")
 
-        st.markdown("### 🛒 Item Selection")
+        st.markdown("### 🛒 Add Items to Bill Cart")
         if inventory_df.empty:
             st.warning("⚠️ Please add items in 'Manage Inventory' first!")
         else:
             item_list = inventory_df["Item Name"].tolist()
-            col_item1, col_item2, col_item3 = st.columns(3)
+            col_item1, col_item2, col_item3, col_item4 = st.columns([2, 1, 1, 1])
             with col_item1:
                 selected_item = st.selectbox("Select Product", item_list)
             
             default_price = float(inventory_df.loc[inventory_df["Item Name"] == selected_item, "Price (₹)"].values[0])
             
             with col_item2:
-                qty = st.number_input("Quantity", min_value=1.0, value=1.0)
+                qty = st.number_input("Quantity", min_value=0.1, value=1.0)
             with col_item3:
-                price = st.number_input("Price per Unit (₹)", min_value=0.0, value=default_price)
+                price = st.number_input("Price (₹)", min_value=0.0, value=default_price)
+            with col_item4:
+                st.markdown("<br>", unsafe_allow_html=True)
+                add_to_cart_btn = st.button("➕ Add Item")
+
+            if add_to_cart_btn:
+                total_item_amt = qty * price
+                st.session_state["cart"].append({
+                    "Item Name": selected_item,
+                    "Qty": qty,
+                    "Price": price,
+                    "Total": total_item_amt
+                })
+                st.success(f"Added {selected_item} to cart!")
+
+            # Display Current Cart Items
+            if len(st.session_state["cart"]) > 0:
+                st.markdown("#### 🛍️ Current Cart Items")
+                cart_df = pd.DataFrame(st.session_state["cart"])
+                st.dataframe(cart_df, use_container_width=True, hide_index=True)
                 
-            total_amount = qty * price
-            st.info(f"**Total Calculated Amount: ₹ {total_amount:.2f}**")
+                grand_total = cart_df["Total"].sum()
+                st.info(f"**Grand Total Amount: ₹ {grand_total:.2f}**")
 
-            if st.button("Save & Generate Bill", use_container_width=True):
-                if cust_name:
-                    new_sale = pd.DataFrame([[bill_no, str(bill_date), cust_name, mobile_no, selected_item, qty, price, total_amount]], 
-                                            columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
-                    sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
-                    save_sales(sales_df)
-                    st.session_state["last_bill"] = {
-                        "bill_no": bill_no,
-                        "date": str(bill_date),
-                        "cust_name": cust_name,
-                        "mobile": mobile_no,
-                        "item": selected_item,
-                        "qty": qty,
-                        "price": price,
-                        "total": total_amount
-                    }
-                    st.success(f"✅ Bill Generated Successfully for {cust_name}! Total: ₹ {total_amount:.2f}")
-                else:
-                    st.warning("⚠️ Please enter Customer Name.")
+                col_act1, col_act2 = st.columns(2)
+                with col_act1:
+                    if st.button("🗑️ Clear Cart", use_container_width=True):
+                        st.session_state["cart"] = []
+                        st.rerun()
+                with col_act2:
+                    if st.button("💾 Save & Generate Final Bill", use_container_width=True):
+                        if cust_name:
+                            # Save each item to sales history
+                            for item in st.session_state["cart"]:
+                                new_sale = pd.DataFrame([[
+                                    bill_no, str(bill_date), cust_name, mobile_no, 
+                                    item["Item Name"], item["Qty"], item["Price"], item["Total"]
+                                ]], columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
+                                sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
+                            
+                            save_sales(sales_df)
+                            st.session_state["last_bill"] = {
+                                "bill_no": bill_no,
+                                "date": str(bill_date),
+                                "cust_name": cust_name,
+                                "mobile": mobile_no,
+                                "items": st.session_state["cart"].copy(),
+                                "grand_total": grand_total
+                            }
+                            st.success(f"✅ Bill Generated Successfully for {cust_name}! Total: ₹ {grand_total:.2f}")
+                            st.session_state["cart"] = []
+                        else:
+                            st.warning("⚠️ Please enter Customer Name.")
 
-        # Display Bill using direct HTML component for flawless printing
+        # Display Bill using direct HTML component for flawless printing of multiple items
         if "last_bill" in st.session_state:
             b = st.session_state["last_bill"]
             st.markdown("---")
             st.markdown("### 🖨️ Bill Ready for Print")
+            
+            # Build table rows for items
+            items_rows_html = ""
+            for itm in b['items']:
+                items_rows_html += f"""
+                <tr>
+                    <td>{itm['Item Name']}</td>
+                    <td class="center">{itm['Qty']}</td>
+                    <td class="right">₹{itm['Price']}</td>
+                    <td class="right">₹{itm['Total']}</td>
+                }
+                """
             
             complete_invoice_html = f"""
             <html>
@@ -216,9 +261,9 @@ else:
                         </table>
                         <table>
                             <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
-                            <tr><td>{b['item']}</td><td class="center">{b['qty']}</td><td class="right">₹{b['price']}</td><td class="right">₹{b['total']}</td></tr>
+                            {items_rows_html}
                         </table>
-                        <h4 style="text-align: right; margin: 5px 0 0 0; color: #8b0000;">Grand Total: ₹ {b['total']:.2f}</h4>
+                        <h4 style="text-align: right; margin: 5px 0 0 0; color: #8b0000;">Grand Total: ₹ {b['grand_total']:.2f}</h4>
                         <p style="font-size: 10px; margin-top: 4px;">Thank you! Visit Again. 🌾</p>
                     </div>
 
@@ -236,9 +281,9 @@ else:
                         </table>
                         <table>
                             <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
-                            <tr><td>{b['item']}</td><td class="center">{b['qty']}</td><td class="right">₹{b['price']}</td><td class="right">₹{b['total']}</td></tr>
+                            {items_rows_html}
                         </table>
-                        <h4 style="text-align: right; margin: 5px 0 0 0; color: #333;">Grand Total: ₹ {b['total']:.2f}</h4>
+                        <h4 style="text-align: right; margin: 5px 0 0 0; color: #333;">Grand Total: ₹ {b['grand_total']:.2f}</h4>
                         <p style="font-size: 10px; margin-top: 4px;">Store Office Copy</p>
                     </div>
                 </div>
@@ -246,8 +291,7 @@ else:
             </html>
             """
             
-            # Render component cleanly inside Streamlit
-            components.html(complete_invoice_html, height=650, scrolling=True)
+            components.html(complete_invoice_html, height=750, scrolling=True)
 
     elif menu == "Sales History & Reports":
         st.title("📊 Total Bills & Category Sales Report")
