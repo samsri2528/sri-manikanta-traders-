@@ -98,7 +98,7 @@ if not st.session_state["authenticated"]:
                     st.error("❌ Invalid Username or Password")
 else:
     st.sidebar.title("🌾 SRI MANIKANTA TRADERS")
-    menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Manage Inventory", "Sales History & Reports", "Cash Book"])
+    menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Manage Inventory", "Present / Closing Stock", "Sales History & Reports", "Cash Book"])
     
     if st.sidebar.button("Logout"):
         st.session_state["authenticated"] = False
@@ -134,6 +134,91 @@ else:
         st.markdown("### 📋 Current Stock List")
         if not inventory_df.empty:
             st.dataframe(inventory_df, use_container_width=True)
+
+    elif menu == "Present / Closing Stock":
+        st.title("📊 Present Stock & Closing Stock Report")
+        st.write("D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343")
+        st.markdown("---")
+
+        if not inventory_df.empty:
+            st.markdown("### 📦 Store Closing Stock Details")
+            st.dataframe(inventory_df, use_container_width=True)
+
+            # Export options
+            col_ex1, col_ex2 = st.columns(2)
+            with col_ex1:
+                # Excel Download
+                @st.cache_data
+                def convert_df_to_excel(df):
+                    from io import BytesIO
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                        df.to_excel(writer, index=False, sheet_name='Closing Stock')
+                    processed_data = output.getvalue()
+                    return processed_data
+
+                excel_data = convert_df_to_excel(inventory_df)
+                st.download_button(
+                    label="📥 Download Closing Stock as Excel",
+                    data=excel_data,
+                    file_name=f"closing_stock_{datetime.now().strftime('%Y-%m-%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+
+            with col_ex2:
+                # PDF / Print Preview Option via HTML
+                stock_rows_html = ""
+                for _, row in inventory_df.iterrows():
+                    stock_rows_html += f"""
+                    <tr>
+                        <td>{row['Item Name']}</td>
+                        <td>{row['Category']}</td>
+                        <td class="center">{row['Quantity']}</td>
+                        <td class="right">₹{row['Price (₹)']}</td>
+                    </tr>
+                    """
+
+                stock_print_html = f"""
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 20px; }}
+                        .box {{ max-width: 800px; margin: auto; padding: 20px; border: 1px solid #ddd; }}
+                        h2 {{ text-align: center; color: #8b0000; margin: 0; }}
+                        p {{ text-align: center; font-size: 12px; color: #555; }}
+                        table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }}
+                        th, td {{ padding: 8px; border: 1px solid #ddd; text-align: left; }}
+                        th {{ background: #f1f5f9; color: #333; }}
+                        .right {{ text-align: right; }}
+                        .center {{ text-align: center; }}
+                        .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 20px; text-align: center; }}
+                        @media print {{ .print-btn {{ display: none; }} body {{ padding: 0; }} }}
+                    </style>
+                </head>
+                <body>
+                    <button class="print-btn" onclick="window.print()">🖨️ Click Here to Print / Save as PDF</button>
+                    <div class="box">
+                        <h2>🕉️ SRI MANIKANTA TRADERS</h2>
+                        <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                        <h3 style="text-align: center; color: #333; margin-bottom: 5px;">Present Closing Stock Report</h3>
+                        <p>Date: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}</p>
+                        <table>
+                            <tr><th>Item Name</th><th>Category</th><th class="center">Quantity</th><th class="right">Price (₹)</th></tr>
+                            {stock_rows_html}
+                        </table>
+                    </div>
+                </body>
+                </html>
+                """
+                if st.button("🖨️ Print / Save as PDF Report", use_container_width=True):
+                    pass
+            
+            # Display print component if requested or inline view
+            components.html(stock_print_html, height=550, scrolling=True)
+
+        else:
+            st.info("No items found in inventory.")
 
     elif menu == "Billing & Sales":
         st.title("🧾 Sales Invoice & Billing")
@@ -414,12 +499,10 @@ else:
     elif menu == "Cash Book":
         st.title("📒 Cash Book & Bank Deposits")
         
-        # Calculate totals
         total_revenue = sales_df["Total Amount"].sum() if not sales_df.empty else 0.0
         total_deposited = cash_df["Deposit Amount (₹)"].sum() if not cash_df.empty else 0.0
         hand_cash_balance = total_revenue - total_deposited
         
-        # Display Metrics
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
             st.metric(label="💵 Total Sales Collection", value=f"₹ {total_revenue:.2f}")
@@ -430,7 +513,6 @@ else:
             
         st.markdown("---")
         
-        # Add Bank Deposit Form with Receipt Attachment
         st.markdown("### ➕ Add Bank Deposit Entry & Attach Receipt")
         with st.form("bank_deposit_form"):
             col_d1, col_d2 = st.columns(2)
@@ -455,7 +537,7 @@ else:
                 st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt recorded successfully!")
                 st.rerun()
                 
-        st.markdown("### 🏦 Bank Deposit History & Receipts")
+        st.markdown("### 🏦 Bank Deposit History & Receipts (Click Image to Zoom / Verify)")
         if not cash_df.empty:
             for idx, row in cash_df.iterrows():
                 rec_name = row['Receipt Name'] if 'Receipt Name' in row and pd.notna(row['Receipt Name']) else "No Receipt"
@@ -470,10 +552,11 @@ else:
                         rec_path = os.path.join("receipts", str(rec_name))
                         if rec_name != "No Receipt" and os.path.exists(rec_path):
                             if rec_name.lower().endswith(('.png', '.jpg', '.jpeg')):
-                                st.image(rec_path, caption="Deposit Receipt", width=250)
+                                # Full size image preview to check genuineness clearly
+                                st.image(rec_path, caption="Deposit Receipt Preview (Click to expand if needed)", use_container_width=True)
                             with open(rec_path, "rb") as file_btn:
                                 st.download_button(
-                                    label="📥 Download Receipt",
+                                    label="📥 Download Receipt File",
                                     data=file_btn,
                                     file_name=rec_name,
                                     mime="application/octet-stream",
