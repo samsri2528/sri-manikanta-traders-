@@ -125,7 +125,7 @@ else:
         
         col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
-            next_bill_no = f"SMT-{len(sales_df)+1:03d}"
+            next_bill_no = f"SMT-{len(sales_df['Bill No'].unique())+1:03d}" if not sales_df.empty else "SMT-001"
             bill_no = st.text_input("Bill No", value=next_bill_no)
         with col_b2:
             bill_date = st.date_input("Date", value=datetime.now())
@@ -150,10 +150,15 @@ else:
             with col_item1:
                 selected_item = st.selectbox("Select Product", item_list)
             
-            default_price = float(inventory_df.loc[inventory_df["Item Name"] == selected_item, "Price (₹)"].values[0])
+            # Show available stock for the selected item
+            item_row = inventory_df[inventory_df["Item Name"] == selected_item]
+            available_stock = float(item_row["Quantity"].values[0]) if not item_row.empty else 0.0
+            default_price = float(item_row["Price (₹)"].values[0]) if not item_row.empty else 100.0
             
+            st.info(f"📦 Available Stock for **{selected_item}**: **{available_stock}** units/kg")
+
             with col_item2:
-                qty = st.number_input("Quantity", min_value=0.1, value=1.0)
+                qty = st.number_input("Quantity", min_value=0.1, max_value=max(0.1, available_stock), value=1.0)
             with col_item3:
                 price = st.number_input("Price (₹)", min_value=0.0, value=default_price)
             with col_item4:
@@ -161,14 +166,17 @@ else:
                 add_to_cart_btn = st.button("➕ Add Item")
 
             if add_to_cart_btn:
-                total_item_amt = qty * price
-                st.session_state["cart"].append({
-                    "Item Name": selected_item,
-                    "Qty": qty,
-                    "Price": price,
-                    "Total": total_item_amt
-                })
-                st.success(f"Added {selected_item} to cart!")
+                if qty > available_stock:
+                    st.error(f"❌ Cannot add! Only {available_stock} available in stock.")
+                else:
+                    total_item_amt = qty * price
+                    st.session_state["cart"].append({
+                        "Item Name": selected_item,
+                        "Qty": qty,
+                        "Price": price,
+                        "Total": total_item_amt
+                    })
+                    st.success(f"Added {selected_item} to cart!")
 
             # Display Current Cart Items
             if len(st.session_state["cart"]) > 0:
@@ -309,10 +317,100 @@ else:
             components.html(complete_invoice_html, height=750, scrolling=True)
 
     elif menu == "Sales History & Reports":
-        st.title("📊 Total Bills & Category Sales Report")
+        st.title("📊 Sales History & Bill Reprint")
         if not sales_df.empty:
+            st.markdown("### 🔍 Search & Reprint Old Bill")
+            search_query = st.text_input("Enter Bill No (e.g. SMT-001) or Farmer Mobile No to Reprint:")
+            
+            if search_query:
+                filtered_bills = sales_df[(sales_df["Bill No"].str.contains(search_query, case=False, na=False)) | 
+                                          (sales_df["Mobile"].astype(str).str.contains(search_query, na=False))]
+                if not filtered_bills.empty:
+                    unique_matched_bills = filtered_bills["Bill No"].unique()
+                    selected_reprint_bill = st.selectbox("Select Bill to Print", unique_matched_bills)
+                    
+                    if st.button("🖨️ Generate Reprint Preview"):
+                        bill_rows = sales_df[sales_df["Bill No"] == selected_reprint_bill]
+                        b_date = bill_rows.iloc[0]["Date"]
+                        b_cust = bill_rows.iloc[0]["Customer Name"]
+                        b_mob = bill_rows.iloc[0]["Mobile"]
+                        
+                        reprint_items = []
+                        for _, row in bill_rows.iterrows():
+                            reprint_items.append({
+                                "Item Name": row["Item Name"],
+                                "Qty": row["Quantity"],
+                                "Price": row["Price"],
+                                "Total": row["Total Amount"]
+                            })
+                        
+                        reprint_grand_total = sum(i["Total"] for i in reprint_items)
+                        
+                        # Render reprint html
+                        reprint_items_html = ""
+                        for itm in reprint_items:
+                            reprint_items_html += f"""
+                            <tr>
+                                <td>{itm['Item Name']}</td>
+                                <td class="center">{itm['Qty']}</td>
+                                <td class="right">₹{itm['Price']}</td>
+                                <td class="right">₹{itm['Total']}</td>
+                            </tr>
+                            """
+                        
+                        reprint_html = f"""
+                        <html>
+                        <head>
+                            <style>
+                                body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 10px; }}
+                                .invoice-box {{ max-width: 700px; margin: auto; padding: 10px; border: 1px solid #eee; background: #fff; }}
+                                .copy-section {{ border: 2px solid #8b0000; padding: 10px; border-radius: 6px; margin-bottom: 10px; }}
+                                .store-copy {{ border: 2px solid #333 !important; }}
+                                h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 16px; }}
+                                .store-copy h3 {{ color: #333; }}
+                                p {{ text-align: center; font-size: 11px; margin: 2px 0; }}
+                                .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 5px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b; }}
+                                .store-badge {{ background: #e2e8f0; color: #333; border: 1px solid #999; }}
+                                table {{ width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }}
+                                th, td {{ padding: 5px; border: 1px solid #ddd; text-align: left; }}
+                                th {{ background: #f1f5f9; }}
+                                .right {{ text-align: right; }}
+                                .center {{ text-align: center; }}
+                                .dashed-line {{ border-bottom: 2px dashed #999; margin: 10px 0; text-align: center; font-size: 12px; color: #666; }}
+                                .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
+                                @media print {{ .print-btn {{ display: none; }} body {{ padding: 0; }} }}
+                            </style>
+                        </head>
+                        <body>
+                            <button class="print-btn" onclick="window.print()">🖨️ Click Here to Print Duplicate Copy</button>
+                            <div class="invoice-box">
+                                <div class="copy-section">
+                                    <h3>🕉️ SRI MANIKANTA TRADERS (DUPLICATE)</h3>
+                                    <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                                    <div class="badge">FARMER COPY</div>
+                                    <hr style="margin: 5px 0;">
+                                    <table style="border:none;">
+                                        <tr style="border:none;"><td style="border:none;"><b>Bill No:</b> {selected_reprint_bill}</td><td style="border:none;"><b>Date:</b> {b_date}</td></tr>
+                                        <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b_cust}</td><td style="border:none;"><b>Mobile:</b> {b_mob}</td></tr>
+                                    </table>
+                                    <table>
+                                        <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
+                                        {reprint_items_html}
+                                    </table>
+                                    <h4 style="text-align: right; margin: 5px 0 0 0; color: #8b0000;">Grand Total: ₹ {reprint_grand_total:.2f}</h4>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                        """
+                        components.html(reprint_html, height=600, scrolling=True)
+                else:
+                    v = st.warning("⚠️ No matching bills found.")
+
+            st.markdown("---")
             st.markdown("### 📋 All Bills History")
             st.dataframe(sales_df, use_container_width=True)
+            
             st.markdown("### 📈 Category-wise Sales Summary")
             merged_df = pd.merge(sales_df, inventory_df[["Item Name", "Category"]], on="Item Name", how="left")
             category_summary = merged_df.groupby("Category")["Total Amount"].sum().reset_index()
