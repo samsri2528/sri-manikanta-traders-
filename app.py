@@ -87,6 +87,8 @@ else:
     if st.sidebar.button("Logout"):
         st.session_state["authenticated"] = False
         st.session_state["cart"] = []
+        if "last_bill" in st.session_state:
+            del st.session_state["last_bill"]
         st.rerun()
         
     inventory_df = load_inventory()
@@ -117,7 +119,7 @@ else:
             st.dataframe(inventory_df, use_container_width=True)
 
     elif menu == "Billing & Sales":
-        st.title("🧾 Sales Invoice & Billing (Multiple Items)")
+        st.title("🧾 Sales Invoice & Billing")
         st.write("D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343")
         st.markdown("---")
         
@@ -130,7 +132,14 @@ else:
         with col_b3:
             mobile_no = st.text_input("Mobile No (10 Digits)", max_chars=10)
             
-        cust_name = st.text_input("Customer / Farmer Name")
+        # Auto-fetch customer name if mobile number exists in sales history
+        default_cust_name = ""
+        if mobile_no and len(mobile_no) == 10 and not sales_df.empty:
+            match = sales_df[sales_df["Mobile"].astype(str) == str(mobile_no)]
+            if not match.empty:
+                default_cust_name = match.iloc[-1]["Customer Name"]
+
+        cust_name = st.text_input("Customer / Farmer Name", value=default_cust_name)
 
         st.markdown("### 🛒 Add Items to Bill Cart")
         if inventory_df.empty:
@@ -177,27 +186,35 @@ else:
                         st.rerun()
                 with col_act2:
                     if st.button("💾 Save & Generate Final Bill", use_container_width=True):
-                        if cust_name:
+                        if cust_name and mobile_no:
                             for item in st.session_state["cart"]:
                                 new_sale = pd.DataFrame([[
-                                    bill_no, str(bill_date), cust_name, mobile_no, 
+                                    bill_no, str(bill_date), cust_name, str(mobile_no), 
                                     item["Item Name"], item["Qty"], item["Price"], item["Total"]
                                 ]], columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
                                 sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
+                                
+                                idx = inventory_df[inventory_df["Item Name"] == item["Item Name"]].index
+                                if not idx.empty:
+                                    current_stock = inventory_df.loc[idx[0], "Quantity"]
+                                    inventory_df.loc[idx[0], "Quantity"] = max(0.0, current_stock - item["Qty"])
                             
                             save_sales(sales_df)
+                            save_inventory(inventory_df)
+                            
                             st.session_state["last_bill"] = {
                                 "bill_no": bill_no,
                                 "date": str(bill_date),
                                 "cust_name": cust_name,
-                                "mobile": mobile_no,
+                                "mobile": str(mobile_no),
                                 "items": st.session_state["cart"].copy(),
                                 "grand_total": grand_total
                             }
-                            st.success(f"✅ Bill Generated Successfully for {cust_name}! Total: ₹ {grand_total:.2f}")
+                            st.success(f"✅ Bill Generated Successfully & Stock Updated for {cust_name}!")
                             st.session_state["cart"] = []
+                            st.rerun()
                         else:
-                            st.warning("⚠️ Please enter Customer Name.")
+                            st.warning("⚠️ Please enter both Customer Name and Mobile Number.")
 
         # Display Bill using direct HTML component for flawless printing
         if "last_bill" in st.session_state:
