@@ -38,7 +38,8 @@ def save_inventory(df):
 
 def load_sales():
     if os.path.exists(SALES_FILE):
-        return pd.read_excel(SALES_FILE)
+        df = pd.read_excel(SALES_FILE)
+        return df
     else:
         df = pd.DataFrame(columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
         df.to_excel(SALES_FILE, index=False)
@@ -146,7 +147,6 @@ else:
 
             col_ex1, col_ex2 = st.columns(2)
             with col_ex1:
-                # Excel Download using openpyxl engine
                 @st.cache_data
                 def convert_df_to_excel(df):
                     from io import BytesIO
@@ -160,7 +160,7 @@ else:
                 st.download_button(
                     label="📥 Download Closing Stock as Excel",
                     data=excel_data,
-                    file_name=f"closing_stock_{datetime.now().strftime('%Y-%m-%d')}.xlsx",
+                    file_name=f"closing_stock_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
@@ -289,9 +289,10 @@ else:
                 with col_act2:
                     if st.button("💾 Save & Generate Final Bill", use_container_width=True):
                         if cust_name and mobile_no:
+                            formatted_date_str = bill_date.strftime("%d-%m-%Y")
                             for item in st.session_state["cart"]:
                                 new_sale = pd.DataFrame([[
-                                    bill_no, str(bill_date), cust_name, str(mobile_no), 
+                                    bill_no, formatted_date_str, cust_name, str(mobile_no), 
                                     item["Item Name"], item["Qty"], item["Price"], item["Total"]
                                 ]], columns=["Bill No", "Date", "Customer Name", "Mobile", "Item Name", "Quantity", "Price", "Total Amount"])
                                 sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
@@ -306,7 +307,7 @@ else:
                             
                             st.session_state["last_bill"] = {
                                 "bill_no": bill_no,
-                                "date": str(bill_date),
+                                "date": formatted_date_str,
                                 "cust_name": cust_name,
                                 "mobile": str(mobile_no),
                                 "items": st.session_state["cart"].copy(),
@@ -400,12 +401,15 @@ else:
     elif menu == "Sales History & Reports":
         st.title("📊 Sales History & Bill Reprint")
         if not sales_df.empty:
+            # Reverse DataFrame to show newest bills on top
+            display_sales_df = sales_df.iloc[::-1].reset_index(drop=True)
+
             st.markdown("### 🔍 Search & Reprint Old Bill")
             search_query = st.text_input("Enter Bill No (e.g. SMT-001) or Farmer Mobile No to Reprint:")
             
             if search_query:
-                filtered_bills = sales_df[(sales_df["Bill No"].str.contains(search_query, case=False, na=False)) | 
-                                          (sales_df["Mobile"].astype(str).str.contains(search_query, na=False))]
+                filtered_bills = display_sales_df[(display_sales_df["Bill No"].str.contains(search_query, case=False, na=False)) | 
+                                                  (display_sales_df["Mobile"].astype(str).str.contains(search_query, na=False))]
                 if not filtered_bills.empty:
                     unique_matched_bills = filtered_bills["Bill No"].unique()
                     selected_reprint_bill = st.selectbox("Select Bill to Print", unique_matched_bills)
@@ -483,8 +487,8 @@ else:
                     st.warning("⚠️ No matching bills found.")
 
             st.markdown("---")
-            st.markdown("### 📋 All Bills History")
-            st.dataframe(sales_df, use_container_width=True)
+            st.markdown("### 📋 All Bills History (Newest on Top)")
+            st.dataframe(display_sales_df, use_container_width=True)
             
             st.markdown("### 📈 Category-wise Sales Summary")
             merged_df = pd.merge(sales_df, inventory_df[["Item Name", "Category"]], on="Item Name", how="left")
@@ -526,15 +530,17 @@ else:
                     with open(os.path.join("receipts", receipt_file.name), "wb") as f:
                         f.write(receipt_file.getbuffer())
 
-                new_dep = pd.DataFrame([[str(dep_date), dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
+                formatted_dep_date = dep_date.strftime("%d-%m-%Y")
+                new_dep = pd.DataFrame([[formatted_dep_date, dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
                 cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
                 save_cash_deposits(cash_df)
                 st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt recorded successfully!")
                 st.rerun()
                 
-        st.markdown("### 🏦 Bank Deposit History & Receipts (Click Image to Zoom / Verify)")
+        st.markdown("### 🏦 Bank Deposit History & Receipts")
         if not cash_df.empty:
-            for idx, row in cash_df.iterrows():
+            display_cash_df = cash_df.iloc[::-1].reset_index(drop=True)
+            for idx, row in display_cash_df.iterrows():
                 rec_name = row['Receipt Name'] if 'Receipt Name' in row and pd.notna(row['Receipt Name']) else "No Receipt"
                 with st.expander(f"📅 Date: {row['Date']} | 🏦 {row['Description']} | Amount: ₹ {row['Deposit Amount (₹)']} | Receipt: {rec_name}"):
                     col_r1, col_r2 = st.columns([2, 1])
@@ -561,8 +567,9 @@ else:
                             
                     with col_r2:
                         st.markdown("<br><br>", unsafe_allow_html=True)
+                        orig_idx = len(cash_df) - 1 - idx
                         if st.button(f"🗑️ Delete Entry", key=f"del_dep_{idx}"):
-                            cash_df = cash_df.drop(idx).reset_index(drop=True)
+                            cash_df = cash_df.drop(orig_idx).reset_index(drop=True)
                             save_cash_deposits(cash_df)
                             st.success("Deleted deposit record successfully!")
                             st.rerun()
@@ -571,4 +578,5 @@ else:
 
         st.markdown("### 💰 Sales Revenue Transaction Ledger")
         if not sales_df.empty:
-            st.dataframe(sales_df[["Date", "Bill No", "Customer Name", "Total Amount"]], use_container_width=True)
+            display_sales_ledger = sales_df.iloc[::-1].reset_index(drop=True)
+            st.dataframe(display_sales_ledger[["Date", "Bill No", "Customer Name", "Total Amount"]], use_container_width=True)
