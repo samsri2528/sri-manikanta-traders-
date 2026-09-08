@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
+import streamlit.components.v1 as components
 
 # Page Configuration
 st.set_page_config(
@@ -16,12 +17,6 @@ st.markdown("""
     .stApp { background-color: #fdfbf7; }
     .stButton>button { background-color: #8b0000; color: white; border-radius: 6px; font-weight: bold; border: none; }
     .stButton>button:hover { background-color: #5c0000; color: white; }
-    @media print {
-        body * { visibility: hidden; }
-        .printable-bill, .printable-bill * { visibility: visible; }
-        .printable-bill { position: absolute; left: 0; top: 0; width: 100%; }
-        .stSidebar, header, footer, .no-print { display: none !important; }
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -172,69 +167,87 @@ else:
                 else:
                     st.warning("⚠️ Please enter Customer Name.")
 
-        # Display Bill Copies cleanly using structured containers
+        # Display Bill using direct HTML component for flawless printing
         if "last_bill" in st.session_state:
             b = st.session_state["last_bill"]
             st.markdown("---")
             st.markdown("### 🖨️ Bill Ready for Print")
-            st.info("💡 కీబోర్డ్ మీద **Ctrl + P** నొక్కి ప్రింట్ చేయండి. రైతు కాపీ మరియు స్టోర్ కాపీ రెండూ కనిపిస్తాయి!")
             
-            # Printable Container Start
-            st.markdown('<div class="printable-bill">', unsafe_allow_html=True)
-            
-            # --- FARMER COPY ---
-            with st.container():
-                st.markdown("""
-                <div style="border: 2px solid #8b0000; padding: 12px; border-radius: 6px; background: white; margin-bottom: 10px;">
-                    <h3 style="text-align: center; color: #8b0000; margin: 0;">🕉️ SRI MANIKANTA TRADERS</h3>
-                    <p style="text-align: center; font-size: 11px; margin: 2px 0; color: black;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                    <p style="text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 5px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b;">FARMER COPY</p>
-                """, unsafe_allow_html=True)
+            complete_invoice_html = f"""
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 10px; }}
+                    .invoice-box {{ max-width: 700px; margin: auto; padding: 10px; border: 1px solid #eee; background: #fff; }}
+                    .copy-section {{ border: 2px solid #8b0000; padding: 10px; border-radius: 6px; margin-bottom: 10px; }}
+                    .store-copy {{ border: 2px solid #333 !important; }}
+                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 16px; }}
+                    .store-copy h3 {{ color: #333; }}
+                    p {{ text-align: center; font-size: 11px; margin: 2px 0; }}
+                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 5px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b; }}
+                    .store-badge {{ background: #e2e8f0; color: #333; border: 1px solid #999; }}
+                    table {{ width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }}
+                    th, td {{ padding: 5px; border: 1px solid #ddd; text-align: left; }}
+                    th {{ background: #f1f5f9; }}
+                    .right {{ text-align: right; }}
+                    .center {{ text-align: center; }}
+                    .dashed-line {{ border-bottom: 2px dashed #999; margin: 10px 0; text-align: center; font-size: 12px; color: #666; }}
+                    .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
+                    .print-btn:hover {{ background: #5c0000; }}
+                    @media print {{
+                        .print-btn {{ display: none; }}
+                        body {{ padding: 0; }}
+                    }}
+                </style>
+            </head>
+            <body>
+                <button class="print-btn" onclick="window.print()">🖨️ Click Here to Print Both Copies</button>
                 
-                col_f1, col_f2 = st.columns(2)
-                with col_f1:
-                    st.markdown(f"**Bill No:** {b['bill_no']}")
-                    st.markdown(f"**Customer:** {b['cust_name']}")
-                with col_f2:
-                    st.markdown(f"**Date:** {b['date']}")
-                    st.markdown(f"**Mobile:** {b['mobile']}")
-                
-                bill_item_df = pd.DataFrame([{
-                    "Item Name": b['item'],
-                    "Qty": b['qty'],
-                    "Price (₹)": b['price'],
-                    "Total (₹)": b['total']
-                }])
-                st.dataframe(bill_item_df, use_container_width=True, hide_index=True)
-                st.markdown(f"<h4 style='text-align: right; color: #8b0000;'>Grand Total: ₹ {b['total']:.2f}</h4>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align: center; font-size: 10px; color: black;'>Thank you! Visit Again. 🌾</p></div>", unsafe_allow_html=True)
+                <div class="invoice-box">
+                    <!-- FARMER COPY -->
+                    <div class="copy-section">
+                        <h3>🕉️ SRI MANIKANTA TRADERS</h3>
+                        <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                        <div class="badge">FARMER COPY</div>
+                        <hr style="margin: 5px 0;">
+                        <table style="border:none;">
+                            <tr style="border:none;"><td style="border:none;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none;"><b>Date:</b> {b['date']}</td></tr>
+                            <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none;"><b>Mobile:</b> {b['mobile']}</td></tr>
+                        </table>
+                        <table>
+                            <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
+                            <tr><td>{b['item']}</td><td class="center">{b['qty']}</td><td class="right">₹{b['price']}</td><td class="right">₹{b['total']}</td></tr>
+                        </table>
+                        <h4 style="text-align: right; margin: 5px 0 0 0; color: #8b0000;">Grand Total: ₹ {b['total']:.2f}</h4>
+                        <p style="font-size: 10px; margin-top: 4px;">Thank you! Visit Again. 🌾</p>
+                    </div>
 
-            # Divider line between copies
-            st.markdown("<div style='border-bottom: 2px dashed #999; margin: 15px 0; text-align: center; font-size: 12px; color: #666;'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>", unsafe_allow_html=True)
+                    <div class="dashed-line">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>
 
-            # --- STORE COPY ---
-            with st.container():
-                st.markdown("""
-                <div style="border: 2px solid #333; padding: 12px; border-radius: 6px; background: white;">
-                    <h3 style="text-align: center; color: #333; margin: 0;">SRI MANIKANTA TRADERS</h3>
-                    <p style="text-align: center; font-size: 11px; margin: 2px 0; color: black;">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                    <p style="text-align: center; font-weight: bold; background: #e2e8f0; color: #333; margin: 5px 0; padding: 3px; font-size: 12px;">STORE COPY</p>
-                """, unsafe_allow_html=True)
-                
-                col_s1, col_s2 = st.columns(2)
-                with col_s1:
-                    st.markdown(f"**Bill No:** {b['bill_no']}")
-                    st.markdown(f"**Customer:** {b['cust_name']}")
-                with col_s2:
-                    st.markdown(f"**Date:** {b['date']}")
-                    st.markdown(f"**Mobile:** {b['mobile']}")
-                
-                st.dataframe(bill_item_df, use_container_width=True, hide_index=True)
-                st.markdown(f"<h4 style='text-align: right; color: #333;'>Grand Total: ₹ {b['total']:.2f}</h4>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align: center; font-size: 10px; color: black;'>Store Office Copy</p></div>", unsafe_allow_html=True)
+                    <!-- STORE COPY -->
+                    <div class="copy-section store-copy">
+                        <h3 style="color: #333;">SRI MANIKANTA TRADERS</h3>
+                        <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                        <div class="badge store-badge">STORE COPY</div>
+                        <hr style="margin: 5px 0;">
+                        <table style="border:none;">
+                            <tr style="border:none;"><td style="border:none;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none;"><b>Date:</b> {b['date']}</td></tr>
+                            <tr style="border:none;"><td style="border:none;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none;"><b>Mobile:</b> {b['mobile']}</td></tr>
+                        </table>
+                        <table>
+                            <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
+                            <tr><td>{b['item']}</td><td class="center">{b['qty']}</td><td class="right">₹{b['price']}</td><td class="right">₹{b['total']}</td></tr>
+                        </table>
+                        <h4 style="text-align: right; margin: 5px 0 0 0; color: #333;">Grand Total: ₹ {b['total']:.2f}</h4>
+                        <p style="font-size: 10px; margin-top: 4px;">Store Office Copy</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
             
-            st.markdown('</div>', unsafe_allow_html=True)
-            # Printable Container End
+            # Render component cleanly inside Streamlit
+            components.html(complete_invoice_html, height=650, scrolling=True)
 
     elif menu == "Sales History & Reports":
         st.title("📊 Total Bills & Category Sales Report")
