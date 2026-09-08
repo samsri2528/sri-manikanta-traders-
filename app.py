@@ -291,7 +291,6 @@ else:
             st.rerun()
 
       with col_act2:
-        # Print / Download Bill format
         bill_text = f"""
         ========================================
                 SRI MANIKANTA TRADERS
@@ -364,7 +363,7 @@ else:
     st.markdown("### 📦 Current Stock List")
     st.dataframe(inv_df, use_container_width=True)
 
-  # 3. Closing Stock Module (With Excel & CSV Download)
+  # 3. Closing Stock Module (Fixed Export)
   elif menu == "Present / Closing Stock":
     st.markdown(
         """
@@ -381,26 +380,22 @@ else:
       total_val = (inv_df["Quantity"] * inv_df["Price (₹)"]).sum()
       st.markdown(f"### 💎 Total Stock Valuation: ₹ {total_val:,.2f}")
 
-      # Download Excel / CSV buttons
       col_dl1, col_dl2 = st.columns(2)
       with col_dl1:
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-          inv_df.to_excel(writer, index=False, sheet_name="Closing Stock")
-        excel_data = output.getvalue()
-        st.download_button(
-            label="📥 Download Closing Stock as Excel",
-            data=excel_data,
-            file_name=f"Closing_Stock_{pd.Timestamp.now().strftime('%d-%m-%Y')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-      with col_dl2:
         csv_data = inv_df.to_csv(index=False).encode("utf-8")
         st.download_button(
             label="📥 Download Closing Stock as CSV",
             data=csv_data,
             file_name=f"Closing_Stock_{pd.Timestamp.now().strftime('%d-%m-%Y')}.csv",
             mime="text/csv",
+        )
+      with col_dl2:
+        txt_data = inv_df.to_string(index=False).encode("utf-8")
+        st.download_button(
+            label="📥 Download Closing Stock Summary",
+            data=txt_data,
+            file_name=f"Closing_Stock_{pd.Timestamp.now().strftime('%d-%m-%Y')}.txt",
+            mime="text/plain",
         )
 
   # 4. Sales History & Delete Bill Module
