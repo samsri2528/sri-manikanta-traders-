@@ -144,15 +144,14 @@ else:
             st.markdown("### 📦 Store Closing Stock Details")
             st.dataframe(inventory_df, use_container_width=True)
 
-            # Export options
             col_ex1, col_ex2 = st.columns(2)
             with col_ex1:
-                # Excel Download
+                # Excel Download using openpyxl engine
                 @st.cache_data
                 def convert_df_to_excel(df):
                     from io import BytesIO
                     output = BytesIO()
-                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
                         df.to_excel(writer, index=False, sheet_name='Closing Stock')
                     processed_data = output.getvalue()
                     return processed_data
@@ -167,7 +166,6 @@ else:
                 )
 
             with col_ex2:
-                # PDF / Print Preview Option via HTML
                 stock_rows_html = ""
                 for _, row in inventory_df.iterrows():
                     stock_rows_html += f"""
@@ -211,10 +209,7 @@ else:
                 </body>
                 </html>
                 """
-                if st.button("🖨️ Print / Save as PDF Report", use_container_width=True):
-                    pass
             
-            # Display print component if requested or inline view
             components.html(stock_print_html, height=550, scrolling=True)
 
         else:
@@ -552,8 +547,7 @@ else:
                         rec_path = os.path.join("receipts", str(rec_name))
                         if rec_name != "No Receipt" and os.path.exists(rec_path):
                             if rec_name.lower().endswith(('.png', '.jpg', '.jpeg')):
-                                # Full size image preview to check genuineness clearly
-                                st.image(rec_path, caption="Deposit Receipt Preview (Click to expand if needed)", use_container_width=True)
+                                st.image(rec_path, caption="Deposit Receipt Preview", use_container_width=True)
                             with open(rec_path, "rb") as file_btn:
                                 st.download_button(
                                     label="📥 Download Receipt File",
