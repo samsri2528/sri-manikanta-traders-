@@ -485,10 +485,10 @@ else:
       for itm in b["items"]:
         items_rows_html += f"""
                 <tr>
-                    <td style="padding: 10px; font-size: 14px;">{itm['Item Name']}</td>
-                    <td class="center" style="padding: 10px; font-size: 14px;">{itm['Qty']}</td>
-                    <td class="right" style="padding: 10px; font-size: 14px;">₹{itm['Price']}</td>
-                    <td class="right" style="padding: 10px; font-size: 14px;">₹{itm['Total']}</td>
+                    <td style="padding: 6px 8px; font-size: 13px;">{itm['Item Name']}</td>
+                    <td class="center" style="padding: 6px 8px; font-size: 13px;">{itm['Qty']}</td>
+                    <td class="right" style="padding: 6px 8px; font-size: 13px;">₹{itm['Price']}</td>
+                    <td class="right" style="padding: 6px 8px; font-size: 13px;">₹{itm['Total']}</td>
                 </tr>
                 """
 
@@ -496,27 +496,28 @@ else:
             <html>
             <head>
                 <style>
-                    @page {{ size: A4; margin: 8mm; }}
+                    @page {{ size: A4; margin: 6mm; }}
                     body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 0; }}
                     .invoice-box {{ width: 100%; max-width: 800px; margin: auto; background: #fff; }}
-                    .copy-section {{ border: 2px solid #8b0000; padding: 16px; border-radius: 8px; margin-bottom: 12px; height: 43vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }}
+                    .copy-section {{ border: 2px solid #8b0000; padding: 12px; border-radius: 8px; margin-bottom: 10px; height: 46vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }}
                     .store-copy {{ border: 2px solid #333 !important; }}
-                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 20px; }}
+                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 18px; }}
                     .store-copy h3 {{ color: #333; }}
-                    p {{ text-align: center; font-size: 13px; margin: 3px 0; }}
-                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 6px 0; padding: 5px; font-size: 14px; border: 1px solid #b8860b; }}
+                    p {{ text-align: center; font-size: 12px; margin: 2px 0; }}
+                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 4px 0; padding: 4px; font-size: 13px; border: 1px solid #b8860b; }}
                     .store-badge {{ background: #e2e8f0; color: #333; border: 1px solid #999; }}
-                    table {{ width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 5px; }}
-                    th, td {{ padding: 8px 10px; border: 1px solid #ddd; text-align: left; }}
-                    th {{ background: #f1f5f9; font-size: 14px; }}
+                    table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }}
+                    th, td {{ padding: 6px 8px; border: 1px solid #ddd; text-align: left; }}
+                    th {{ background: #f1f5f9; font-size: 13px; }}
                     .right {{ text-align: right; }}
                     .center {{ text-align: center; }}
-                    .dashed-line {{ border-bottom: 2px dashed #999; margin: 8px 0; text-align: center; font-size: 13px; color: #666; }}
+                    .dashed-line {{ border-bottom: 2px dashed #999; margin: 6px 0; text-align: center; font-size: 12px; color: #666; }}
+                    .signatures {{ display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; font-weight: bold; color: #333; }}
                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                     @media print {{ 
                         .print-btn {{ display: none; }} 
                         body {{ padding: 0; }}
-                        .copy-section {{ height: 46vh; margin-bottom: 10px; padding: 14px; }}
+                        .copy-section {{ height: 47vh; margin-bottom: 8px; padding: 10px; }}
                     }}
                 </style>
             </head>
@@ -528,10 +529,10 @@ else:
                             <h3>🕉️ SRI MANIKANTA TRADERS</h3>
                             <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
                             <div class="badge">FARMER COPY</div>
-                            <table style="border:none; margin-top: 5px; font-size: 13px;">
-                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 4px;"><b>Date:</b> {b['date']}</td></tr>
-                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 4px;"><b>Village:</b> {b['village']}</td></tr>
-                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 4px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
+                            <table style="border:none; margin-top: 2px; font-size: 12px;">
+                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 2px;"><b>Date:</b> {b['date']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 2px;"><b>Village:</b> {b['village']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 2px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
                             </table>
                         </div>
                         <div>
@@ -539,7 +540,13 @@ else:
                                 <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
                                 {items_rows_html}
                             </table>
-                            <h3 style="text-align: right; margin: 8px 0 0 0; color: #8b0000; font-size: 18px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <div class="signatures" style="width: 60%; margin-top: 0;">
+                                    <span>Farmer Signature</span>
+                                    <span>SMT Signature</span>
+                                </div>
+                                <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 16px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                            </div>
                         </div>
                     </div>
                     
@@ -550,10 +557,10 @@ else:
                             <h3 style="color: #333;">SRI MANIKANTA TRADERS</h3>
                             <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
                             <div class="badge store-badge">STORE COPY</div>
-                            <table style="border:none; margin-top: 5px; font-size: 13px;">
-                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 4px;"><b>Date:</b> {b['date']}</td></tr>
-                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 4px;"><b>Village:</b> {b['village']}</td></tr>
-                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 4px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
+                            <table style="border:none; margin-top: 2px; font-size: 12px;">
+                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 2px;"><b>Date:</b> {b['date']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 2px;"><b>Village:</b> {b['village']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 2px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
                             </table>
                         </div>
                         <div>
@@ -561,7 +568,13 @@ else:
                                 <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
                                 {items_rows_html}
                             </table>
-                            <h3 style="text-align: right; margin: 8px 0 0 0; color: #333; font-size: 18px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <div class="signatures" style="width: 60%; margin-top: 0;">
+                                    <span>Farmer Signature</span>
+                                    <span>SMT Signature</span>
+                                </div>
+                                <h3 style="text-align: right; margin: 0; color: #333; font-size: 16px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -649,23 +662,24 @@ else:
                             <html>
                             <head>
                                 <style>
-                                    @page {{ size: A4; margin: 8mm; }}
+                                    @page {{ size: A4; margin: 6mm; }}
                                     body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 0; }}
                                     .invoice-box {{ width: 100%; max-width: 800px; margin: auto; background: #fff; }}
-                                    .copy-section {{ border: 2px solid #8b0000; padding: 16px; border-radius: 8px; margin-bottom: 12px; height: 43vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }}
-                                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 20px; }}
-                                    p {{ text-align: center; font-size: 13px; margin: 3px 0; }}
-                                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 6px 0; padding: 5px; font-size: 14px; border: 1px solid #b8860b; }}
-                                    table {{ width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 5px; }}
-                                    th, td {{ padding: 8px 10px; border: 1px solid #ddd; text-align: left; }}
+                                    .copy-section {{ border: 2px solid #8b0000; padding: 12px; border-radius: 8px; margin-bottom: 10px; height: 46vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }}
+                                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 18px; }}
+                                    p {{ text-align: center; font-size: 12px; margin: 2px 0; }}
+                                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 4px 0; padding: 4px; font-size: 13px; border: 1px solid #b8860b; }}
+                                    table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }}
+                                    th, td {{ padding: 6px 8px; border: 1px solid #ddd; text-align: left; }}
                                     th {{ background: #f1f5f9; }}
                                     .right {{ text-align: right; }}
                                     .center {{ text-align: center; }}
+                                    .signatures {{ display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; font-weight: bold; color: #333; }}
                                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                                     @media print {{ 
                                         .print-btn {{ display: none; }} 
                                         body {{ padding: 0; }}
-                                        .copy-section {{ height: 46vh; margin-bottom: 10px; padding: 14px; }}
+                                        .copy-section {{ height: 47vh; margin-bottom: 8px; padding: 10px; }}
                                     }}
                                 </style>
                             </head>
@@ -677,10 +691,10 @@ else:
                                             <h3>🕉️ SRI MANIKANTA TRADERS (DUPLICATE)</h3>
                                             <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
                                             <div class="badge">FARMER COPY</div>
-                                            <table style="border:none; margin-top: 5px; font-size: 13px;">
-                                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Bill No:</b> {selected_reprint_bill}</td><td style="border:none; padding: 4px;"><b>Date:</b> {b_date}</td></tr>
-                                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Customer:</b> {b_cust}</td><td style="border:none; padding: 4px;"><b>Village:</b> {b_vill}</td></tr>
-                                                <tr style="border:none;"><td style="border:none; padding: 4px;"><b>Mobile:</b> {b_mob}</td><td style="border:none; padding: 4px;"><b>Aadhaar:</b> {b_aadhaar if b_aadhaar else 'N/A'}</td></tr>
+                                            <table style="border:none; margin-top: 2px; font-size: 12px;">
+                                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Bill No:</b> {selected_reprint_bill}</td><td style="border:none; padding: 2px;"><b>Date:</b> {b_date}</td></tr>
+                                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Customer:</b> {b_cust}</td><td style="border:none; padding: 2px;"><b>Village:</b> {b_vill}</td></tr>
+                                                <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Mobile:</b> {b_mob}</td><td style="border:none; padding: 2px;"><b>Aadhaar:</b> {b_aadhaar if b_aadhaar else 'N/A'}</td></tr>
                                             </table>
                                         </div>
                                         <div>
@@ -688,7 +702,13 @@ else:
                                                 <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
                                                 {reprint_items_html}
                                             </table>
-                                            <h3 style="text-align: right; margin: 8px 0 0 0; color: #8b0000; font-size: 18px;">Grand Total: ₹ {reprint_grand_total:.2f}</h3>
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                                <div class="signatures" style="width: 60%; margin-top: 0;">
+                                                    <span>Farmer Signature</span>
+                                                    <span>SMT Signature</span>
+                                                </div>
+                                                <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 16px;">Grand Total: ₹ {reprint_grand_total:.2f}</h3>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
