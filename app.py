@@ -512,7 +512,7 @@ else:
                     .right {{ text-align: right; }}
                     .center {{ text-align: center; }}
                     .dashed-line {{ border-bottom: 2px dashed #999; margin: 6px 0; text-align: center; font-size: 12px; color: #666; }}
-                    .signature-box {{ border: 1px solid #777; padding: 8px 12px; border-radius: 4px; margin-top: 4px; background: #fff; }}
+                    .signature-box {{ border: 1px solid #777; padding: 18px 15px; border-radius: 4px; margin-top: 4px; background: #fff; }}
                     .signatures {{ display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #333; width: 100%; }}
                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                     @media print {{ 
@@ -539,14 +539,14 @@ else:
                                 <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
                                 {items_rows_html}
                             </table>
-                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
+                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 6px;">
                                 <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 15px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
                             </div>
                         </div>
                         <div class="signature-box">
                             <div class="signatures">
                                 <span>Farmer Signature</span>
-                                <span>SMT Signature</span>
+                                <span style="margin-right: 80px;">SMT Signature</span>
                             </div>
                         </div>
                     </div>
@@ -567,14 +567,14 @@ else:
                                 <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
                                 {items_rows_html}
                             </table>
-                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
+                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 6px;">
                                 <h3 style="text-align: right; margin: 0; color: #333; font-size: 15px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
                             </div>
                         </div>
                         <div class="signature-box">
                             <div class="signatures">
                                 <span>Farmer Signature</span>
-                                <span>SMT Signature</span>
+                                <span style="margin-right: 80px;">SMT Signature</span>
                             </div>
                         </div>
                     </div>
@@ -675,7 +675,7 @@ else:
                                     th {{ background: #f1f5f9; }}
                                     .right {{ text-align: right; }}
                                     .center {{ text-align: center; }}
-                                    .signature-box {{ border: 1px solid #777; padding: 8px 12px; border-radius: 4px; margin-top: 4px; background: #fff; }}
+                                    .signature-box {{ border: 1px solid #777; padding: 18px 15px; border-radius: 4px; margin-top: 4px; background: #fff; }}
                                     .signatures {{ display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #333; width: 100%; }}
                                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                                     @media print {{ 
@@ -702,14 +702,14 @@ else:
                                                 <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
                                                 {reprint_items_html}
                                             </table>
-                                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
+                                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 6px;">
                                                 <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 15px;">Grand Total: ₹ {reprint_grand_total:.2f}</h3>
                                             </div>
                                         </div>
                                         <div class="signature-box">
                                             <div class="signatures">
                                                 <span>Farmer Signature</span>
-                                                <span>SMT Signature</span>
+                                                <span style="margin-right: 80px;">SMT Signature</span>
                                             </div>
                                         </div>
                                     </div>
