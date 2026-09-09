@@ -168,33 +168,48 @@ else:
 
   if menu == "Manage Inventory":
     st.title("📦 Inventory & Stock Management")
-    with st.form("add_item_form"):
-      col1, col2 = st.columns(2)
-      with col1:
-        new_item = st.text_input("Product / Item Name")
-        new_category = st.selectbox(
-            "Category",
-            ["Seeds", "Fertilizers", "Pesticides", "Animal Feed", "Others"],
-        )
-      with col2:
-        new_qty = st.number_input("Initial Quantity", min_value=0.0, value=10.0)
-        new_price = st.number_input(
-            "Price per Unit (₹)", min_value=0.0, value=100.0
-        )
-      if st.form_submit_button("Add Item to Inventory"):
-        if new_item:
-          new_row = pd.DataFrame(
-              [[new_item, new_category, new_qty, new_price]],
-              columns=["Item Name", "Category", "Quantity", "Price (₹)"],
+
+    # Inventory Security Password Check (Updated to samsri25285)
+    st.markdown("### 🔒 Inventory Access Verification")
+    inv_password = st.text_input(
+        "Enter Inventory Password to Add/Update Stock",
+        type="password",
+        key="inv_pwd_box",
+    )
+
+    if inv_password == "samsri25285":
+      st.success("✅ Access Granted for Inventory Management")
+      with st.form("add_item_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+          new_item = st.text_input("Product / Item Name")
+          new_category = st.selectbox(
+              "Category",
+              ["Seeds", "Fertilizers", "Pesticides", "Animal Feed", "Others"],
           )
-          inventory_df = pd.concat(
-              [inventory_df, new_row], ignore_index=True
+        with col2:
+          new_qty = st.number_input(
+              "Initial Quantity", min_value=0.0, value=10.0
           )
-          save_inventory(inventory_df)
-          st.success(f"✅ Added '{new_item}' successfully!")
-          st.rerun()
-        else:
-          st.warning("⚠️ Enter item name.")
+          new_price = st.number_input(
+              "Price per Unit (₹)", min_value=0.0, value=100.0
+          )
+        if st.form_submit_button("Add Item to Inventory"):
+          if new_item:
+            new_row = pd.DataFrame(
+                [[new_item, new_category, new_qty, new_price]],
+                columns=["Item Name", "Category", "Quantity", "Price (₹)"],
+            )
+            inventory_df = pd.concat(
+                [inventory_df, new_row], ignore_index=True
+            )
+            save_inventory(inventory_df)
+            st.success(f"✅ Added '{new_item}' successfully!")
+            st.rerun()
+          else:
+            st.warning("⚠️ Enter item name.")
+    else:
+      st.warning("⚠️ Please enter the correct password above to manage stock.")
 
     st.markdown("### 📋 Current Stock List")
     if not inventory_df.empty:
@@ -345,13 +360,14 @@ else:
       available_stock = (
           float(item_row["Quantity"].values[0]) if not item_row.empty else 0.0
       )
-      default_price = (
+      # Fixed inventory price loaded from stock (cannot be edited in billing)
+      fixed_price = (
           float(item_row["Price (₹)"].values[0]) if not item_row.empty else 100.0
       )
 
       st.info(
           f"📦 Available Stock for **{selected_item}**: **{available_stock}**"
-          " units/kg"
+          f" units/kg | 🏷️ Fixed Unit Price: **₹ {fixed_price}**"
       )
 
       with col_item2:
@@ -362,7 +378,10 @@ else:
             value=1.0,
         )
       with col_item3:
-        price = st.number_input("Price (₹)", min_value=0.0, value=default_price)
+        # Displaying fixed price as text so it cannot be manually changed in billing
+        st.markdown("**Unit Price (₹)**")
+        st.markdown(f"### ₹ {fixed_price}")
+        price = fixed_price
       with col_item4:
         st.markdown("<br>", unsafe_allow_html=True)
         add_to_cart_btn = st.button("➕ Add Item")
