@@ -512,7 +512,7 @@ else:
                     .right {{ text-align: right; }}
                     .center {{ text-align: center; }}
                     .dashed-line {{ border-bottom: 2px dashed #999; margin: 6px 0; text-align: center; font-size: 12px; color: #666; }}
-                    .signatures {{ display: flex; justify-content: space-between; margin-top: 15px; font-size: 13px; font-weight: bold; color: #333; width: 100%; }}
+                    .signatures {{ display: flex; justify-content: space-between; margin-top: 25px; font-size: 13px; font-weight: bold; color: #333; width: 100%; }}
                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                     @media print {{ 
                         .print-btn {{ display: none; }} 
@@ -674,7 +674,7 @@ else:
                                     th {{ background: #f1f5f9; }}
                                     .right {{ text-align: right; }}
                                     .center {{ text-align: center; }}
-                                    .signatures {{ display: flex; justify-content: space-between; margin-top: 15px; font-size: 13px; font-weight: bold; color: #333; width: 100%; }}
+                                    .signatures {{ display: flex; justify-content: space-between; margin-top: 25px; font-size: 13px; font-weight: bold; color: #333; width: 100%; }}
                                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                                     @media print {{ 
                                         .print-btn {{ display: none; }} 
