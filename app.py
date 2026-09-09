@@ -499,25 +499,26 @@ else:
                     @page {{ size: A4; margin: 6mm; }}
                     body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 0; }}
                     .invoice-box {{ width: 100%; max-width: 800px; margin: auto; background: #fff; }}
-                    .copy-section {{ border: 2px solid #8b0000; padding: 12px; border-radius: 8px; margin-bottom: 12px; height: 46vh; box-sizing: border-box; }}
+                    .copy-section {{ border: 2px solid #8b0000; padding: 10px; border-radius: 8px; margin-bottom: 12px; height: 46vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }}
                     .store-copy {{ border: 2px solid #333 !important; }}
-                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 18px; }}
+                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 17px; }}
                     .store-copy h3 {{ color: #333; }}
-                    p {{ text-align: center; font-size: 12px; margin: 2px 0; }}
-                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 4px 0; padding: 4px; font-size: 13px; border: 1px solid #b8860b; }}
+                    p {{ text-align: center; font-size: 11px; margin: 2px 0; }}
+                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 3px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b; }}
                     .store-badge {{ background: #e2e8f0; color: #333; border: 1px solid #999; }}
-                    table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }}
-                    th, td {{ padding: 6px 8px; border: 1px solid #ddd; text-align: left; }}
-                    th {{ background: #f1f5f9; font-size: 13px; }}
+                    table {{ width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 2px; }}
+                    th, td {{ padding: 5px 6px; border: 1px solid #ddd; text-align: left; }}
+                    th {{ background: #f1f5f9; font-size: 12px; }}
                     .right {{ text-align: right; }}
                     .center {{ text-align: center; }}
-                    .dashed-line {{ border-bottom: 2px dashed #999; margin: 8px 0; text-align: center; font-size: 12px; color: #666; }}
-                    .signatures {{ display: flex; justify-content: space-between; margin-top: 30px; font-size: 13px; font-weight: bold; color: #333; width: 100%; }}
+                    .dashed-line {{ border-bottom: 2px dashed #999; margin: 6px 0; text-align: center; font-size: 12px; color: #666; }}
+                    .signature-box {{ border: 1px solid #777; padding: 8px 12px; border-radius: 4px; margin-top: 4px; background: #fff; }}
+                    .signatures {{ display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #333; width: 100%; }}
                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                     @media print {{ 
                         .print-btn {{ display: none; }} 
                         body {{ padding: 0; }}
-                        .copy-section {{ height: 47vh; margin-bottom: 10px; padding: 10px; }}
+                        .copy-section {{ height: 47vh; margin-bottom: 8px; padding: 8px; }}
                     }}
                 </style>
             </head>
@@ -525,48 +526,56 @@ else:
                 <button class="print-btn" onclick="window.print()">🖨️ Click Here to Print Both Copies</button>
                 <div class="invoice-box">
                     <div class="copy-section">
-                        <h3>🕉️ SRI MANIKANTA TRADERS</h3>
-                        <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                        <div class="badge">FARMER COPY</div>
-                        <table style="border:none; margin-top: 2px; font-size: 12px;">
-                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 2px;"><b>Date:</b> {b['date']}</td></tr>
-                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 2px;"><b>Village:</b> {b['village']}</td></tr>
-                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 2px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
-                        </table>
-                        <table>
-                            <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
-                            {items_rows_html}
-                        </table>
-                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 6px;">
-                            <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 16px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                        <div>
+                            <h3>🕉️ SRI MANIKANTA TRADERS</h3>
+                            <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                            <div class="badge">FARMER COPY</div>
+                            <table style="border:none; margin-top: 2px; font-size: 11px;">
+                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 1px;"><b>Date:</b> {b['date']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 1px;"><b>Village:</b> {b['village']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 1px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
+                            </table>
+                            <table>
+                                <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
+                                {items_rows_html}
+                            </table>
+                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
+                                <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 15px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                            </div>
                         </div>
-                        <div class="signatures">
-                            <span>Farmer Signature</span>
-                            <span>SMT Signature</span>
+                        <div class="signature-box">
+                            <div class="signatures">
+                                <span>Farmer Signature</span>
+                                <span>SMT Signature</span>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="dashed-line">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</div>
                     
                     <div class="copy-section store-copy">
-                        <h3 style="color: #333;">SRI MANIKANTA TRADERS</h3>
-                        <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                        <div class="badge store-badge">STORE COPY</div>
-                        <table style="border:none; margin-top: 2px; font-size: 12px;">
-                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 2px;"><b>Date:</b> {b['date']}</td></tr>
-                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 2px;"><b>Village:</b> {b['village']}</td></tr>
-                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 2px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
-                        </table>
-                        <table>
-                            <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
-                            {items_rows_html}
-                        </table>
-                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 6px;">
-                            <h3 style="text-align: right; margin: 0; color: #333; font-size: 16px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                        <div>
+                            <h3 style="color: #333;">SRI MANIKANTA TRADERS</h3>
+                            <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                            <div class="badge store-badge">STORE COPY</div>
+                            <table style="border:none; margin-top: 2px; font-size: 11px;">
+                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Bill No:</b> {b['bill_no']}</td><td style="border:none; padding: 1px;"><b>Date:</b> {b['date']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Customer:</b> {b['cust_name']}</td><td style="border:none; padding: 1px;"><b>Village:</b> {b['village']}</td></tr>
+                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Mobile:</b> {b['mobile']}</td><td style="border:none; padding: 1px;"><b>Aadhaar:</b> {b['aadhaar'] if b['aadhaar'] else 'N/A'}</td></tr>
+                            </table>
+                            <table>
+                                <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
+                                {items_rows_html}
+                            </table>
+                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
+                                <h3 style="text-align: right; margin: 0; color: #333; font-size: 15px;">Grand Total: ₹ {b['grand_total']:.2f}</h3>
+                            </div>
                         </div>
-                        <div class="signatures">
-                            <span>Farmer Signature</span>
-                            <span>SMT Signature</span>
+                        <div class="signature-box">
+                            <div class="signatures">
+                                <span>Farmer Signature</span>
+                                <span>SMT Signature</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -657,21 +666,22 @@ else:
                                     @page {{ size: A4; margin: 6mm; }}
                                     body {{ font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 0; }}
                                     .invoice-box {{ width: 100%; max-width: 800px; margin: auto; background: #fff; }}
-                                    .copy-section {{ border: 2px solid #8b0000; padding: 12px; border-radius: 8px; margin-bottom: 12px; height: 46vh; box-sizing: border-box; }}
-                                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 18px; }}
-                                    p {{ text-align: center; font-size: 12px; margin: 2px 0; }}
-                                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 4px 0; padding: 4px; font-size: 13px; border: 1px solid #b8860b; }}
-                                    table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }}
-                                    th, td {{ padding: 6px 8px; border: 1px solid #ddd; text-align: left; }}
+                                    .copy-section {{ border: 2px solid #8b0000; padding: 10px; border-radius: 8px; margin-bottom: 12px; height: 46vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }}
+                                    h3 {{ text-align: center; color: #8b0000; margin: 0; font-size: 17px; }}
+                                    p {{ text-align: center; font-size: 11px; margin: 2px 0; }}
+                                    .badge {{ text-align: center; font-weight: bold; background: #fdfbf7; color: #8b0000; margin: 3px 0; padding: 3px; font-size: 12px; border: 1px solid #b8860b; }}
+                                    table {{ width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 2px; }}
+                                    th, td {{ padding: 5px 6px; border: 1px solid #ddd; text-align: left; }}
                                     th {{ background: #f1f5f9; }}
                                     .right {{ text-align: right; }}
                                     .center {{ text-align: center; }}
-                                    .signatures {{ display: flex; justify-content: space-between; margin-top: 30px; font-size: 13px; font-weight: bold; color: #333; width: 100%; }}
+                                    .signature-box {{ border: 1px solid #777; padding: 8px 12px; border-radius: 4px; margin-top: 4px; background: #fff; }}
+                                    .signatures {{ display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #333; width: 100%; }}
                                     .print-btn {{ display: block; width: 100%; background: #8b0000; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; text-align: center; }}
                                     @media print {{ 
                                         .print-btn {{ display: none; }} 
                                         body {{ padding: 0; }}
-                                        .copy-section {{ height: 47vh; margin-bottom: 10px; padding: 10px; }}
+                                        .copy-section {{ height: 47vh; margin-bottom: 8px; padding: 8px; }}
                                     }}
                                 </style>
                             </head>
@@ -679,24 +689,28 @@ else:
                                 <button class="print-btn" onclick="window.print()">🖨️ Click Here to Print Duplicate Copy</button>
                                 <div class="invoice-box">
                                     <div class="copy-section">
-                                        <h3>🕉️ SRI MANIKANTA TRADERS (DUPLICATE)</h3>
-                                        <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
-                                        <div class="badge">FARMER COPY</div>
-                                        <table style="border:none; margin-top: 2px; font-size: 12px;">
-                                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Bill No:</b> {selected_reprint_bill}</td><td style="border:none; padding: 2px;"><b>Date:</b> {b_date}</td></tr>
-                                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Customer:</b> {b_cust}</td><td style="border:none; padding: 2px;"><b>Village:</b> {b_vill}</td></tr>
-                                            <tr style="border:none;"><td style="border:none; padding: 2px;"><b>Mobile:</b> {b_mob}</td><td style="border:none; padding: 2px;"><b>Aadhaar:</b> {b_aadhaar if b_aadhaar else 'N/A'}</td></tr>
-                                        </table>
-                                        <table>
-                                            <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
-                                            {reprint_items_html}
-                                        </table>
-                                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 6px;">
-                                            <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 16px;">Grand Total: ₹ {reprint_grand_total:.2f}</h3>
+                                        <div>
+                                            <h3>🕉️ SRI MANIKANTA TRADERS (DUPLICATE)</h3>
+                                            <p>D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</p>
+                                            <div class="badge">FARMER COPY</div>
+                                            <table style="border:none; margin-top: 2px; font-size: 11px;">
+                                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Bill No:</b> {selected_reprint_bill}</td><td style="border:none; padding: 1px;"><b>Date:</b> {b_date}</td></tr>
+                                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Customer:</b> {b_cust}</td><td style="border:none; padding: 1px;"><b>Village:</b> {b_vill}</td></tr>
+                                                <tr style="border:none;"><td style="border:none; padding: 1px;"><b>Mobile:</b> {b_mob}</td><td style="border:none; padding: 1px;"><b>Aadhaar:</b> {b_aadhaar if b_aadhaar else 'N/A'}</td></tr>
+                                            </table>
+                                            <table>
+                                                <tr><th>Item Name</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr>
+                                                {reprint_items_html}
+                                            </table>
+                                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
+                                                <h3 style="text-align: right; margin: 0; color: #8b0000; font-size: 15px;">Grand Total: ₹ {reprint_grand_total:.2f}</h3>
+                                            </div>
                                         </div>
-                                        <div class="signatures">
-                                            <span>Farmer Signature</span>
-                                            <span>SMT Signature</span>
+                                        <div class="signature-box">
+                                            <div class="signatures">
+                                                <span>Farmer Signature</span>
+                                                <span>SMT Signature</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
