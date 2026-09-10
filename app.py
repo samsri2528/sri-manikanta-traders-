@@ -18,24 +18,64 @@ def login_page():
     password = st.text_input("Password", type="password")
     
     if st.button("Login"):
-        if username == "admin" and password == "manikanta123":
+        valid_users = [
+            ("admin", "manikanta123"),
+            ("admin", "samsri2528"),
+            ("manikanta", "samsri2528")
+        ]
+        
+        if (username, password) in valid_users:
             st.session_state.logged_in = True
             st.session_state.username = username
             st.rerun()
         else:
             st.error("Invalid Username or Password")
 
-# Main Dashboard & Forms
+# Main Dashboard & Navigation
 def main_app():
-    st.sidebar.title("Sri Manikanta Traders")
+    st.sidebar.title("SRI MANIKANTA TRADERS")
     st.sidebar.write(f"Logged in as: **{st.session_state.username}**")
     
-    menu = st.sidebar.selectbox("Navigation", ["Dashboard", "Add Bank Deposit", "Add Expense", "Cash Book"])
+    menu = st.sidebar.selectbox("Navigation", [
+        "Billing & Sales", 
+        "Manage Inventory", 
+        "Present / Closing Stock", 
+        "Sales History & Reports", 
+        "Cash Book",
+        "Add Bank Deposit",
+        "Add Expense"
+    ])
     
-    if menu == "Dashboard":
-        st.title("Welcome to Sri Manikanta Traders Dashboard")
-        st.metric(label="Total Bank Deposits", value=len(st.session_state.bank_deposits))
-        st.metric(label="Total Expenses", value=len(st.session_state.expenses))
+    if menu == "Billing & Sales":
+        st.header("Billing & Sales Grid")
+        st.write("Billing interface is active here.")
+
+    elif menu == "Manage Inventory":
+        st.header("Manage Inventory")
+        st.write("Stock management options.")
+
+    elif menu == "Present / Closing Stock":
+        st.header("Present / Closing Stock")
+        st.write("View current stock details.")
+
+    elif menu == "Sales History & Reports":
+        st.header("Sales History & Reports")
+        st.write("Past sales reports and analytics.")
+
+    elif menu == "Cash Book":
+        st.header("Cash Book (Bank Deposits & Expenses)")
+        
+        st.subheader("Bank Deposits List")
+        if st.session_state.bank_deposits:
+            st.dataframe(pd.DataFrame(st.session_state.bank_deposits))
+        else:
+            st.info("No bank deposits recorded yet.")
+            
+        st.subheader("Expenses List")
+        if st.session_state.expenses:
+            st.dataframe(pd.DataFrame(st.session_state.expenses))
+        else:
+            st.info("No expenses recorded yet.")
 
     elif menu == "Add Bank Deposit":
         st.header("+ Add Bank Deposit Entry & Attach Receipt")
@@ -70,25 +110,11 @@ def main_app():
                 })
                 st.success("Expense entry saved successfully!")
 
-    elif menu == "Cash Book":
-        st.header("Cash Book & Authorizations")
-        st.subheader("Bank Deposits List")
-        if st.session_state.bank_deposits:
-            st.dataframe(pd.DataFrame(st.session_state.bank_deposits))
-        else:
-            st.info("No bank deposits yet.")
-            
-        st.subheader("Expenses List")
-        if st.session_state.expenses:
-            st.dataframe(pd.DataFrame(st.session_state.expenses))
-        else:
-            st.info("No expenses yet.")
-
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
         st.rerun()
 
-# Run app
+# Run application
 if not st.session_state.logged_in:
     login_page()
 else:
