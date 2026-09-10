@@ -14,6 +14,9 @@ st.markdown(
     .stApp { background-color: #fdfbf7; }
     .stButton>button { background-color: #b80000; color: white; border-radius: 6px; font-weight: bold; border: none; }
     .stButton>button:hover { background-color: #5c0000; color: white; }
+    .bill-box { border: 2px solid #444; padding: 15px; border-radius: 5px; background-color: white; margin-bottom: 20px; font-family: Arial, sans-serif; }
+    .header-title { text-align: center; font-weight: bold; font-size: 18px; color: #4a0000; }
+    .sub-text { text-align: center; font-size: 12px; color: #333; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -75,29 +78,103 @@ if check_login():
   # --- BILLING TAB ---
   if menu == "Billing":
     st.header("🛒 Billing Section")
-    st.write("ఇక్కడ కొత్త బిల్లు తయారు చేయవచ్చు.")
 
     with st.form("billing_form"):
-      customer_name = st.text_input("Customer Name")
-      product_list = ["Item A", "Item B", "Item C"]
-      selected_product = st.selectbox("Select Product", product_list)
+      col1, col2 = st.columns(2)
+      with col1:
+        customer_name = st.text_input("Customer Name (చక్)")
+        mobile = st.text_input("Mobile Number", value="7995217343")
+      with col2:
+        bill_no = st.text_input("Bill No", value="SMT-003")
+        village = st.text_input("Village", value="Pedda Harivanam")
 
-      quantity = st.number_input("Quantity", min_value=1, step=1)
-      price_per_item = st.number_input("Price per Unit", min_value=0.0, step=0.1)
+      product_name = st.selectbox(
+          "Item Name", ["Organick DAP 50KG", "Item B", "Item C"]
+      )
+      col3, col4 = st.columns(2)
+      with col3:
+        quantity = st.number_input("Quantity", min_value=1.0, value=1.0, step=1.0)
+      with col4:
+        price = st.number_input("Price", min_value=0.0, value=1000.0, step=10.0)
 
-      total_amount = quantity * price_per_item
-      st.info(f"**Total Amount: ₹ {total_amount:.2f}**")
+      submit_bill = st.form_submit_button("Generate Bill Preview")
 
-      submit_bill = st.form_submit_button("Generate & Save Bill")
+    if submit_bill:
+      total_val = quantity * price
 
-      if submit_bill:
-        if customer_name:
-          st.success(
-              f"సక్సెస్‌ఫుల్‌గా బిల్ క్రియేట్ చేయబడింది! కస్టమర్:"
-              f" {customer_name}, మొత్తం: ₹{total_amount:.2f}"
-          )
-        else:
-          st.error("దయచేసి కస్టమర్ పేరు నమోదు చేయండి!")
+      # Function to render a single copy (Farmer or Store)
+      def render_bill_copy(copy_type):
+        st.markdown(
+            f"""
+                <div class="bill-box">
+                    <div class="header-title">SRI MANIKANTA TRADERS</div>
+                    <div class="sub-text">D.No 6/159/25, Pedda Harivanam Village, Adoni Mandal | Ph: 7995217343</div>
+                    <div style="text-align: center; font-weight: bold; margin-top: 5px; color: #b80000;">{copy_type}</div>
+                    <hr style="margin: 5px 0;">
+                    <table width="100%" style="font-size: 13px;">
+                        <tr>
+                            <td><b>Bill No:</b> {bill_no}</td>
+                            <td><b>Date:</b> {datetime.now().strftime('%d-%m-%Y')}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Customer:</b> {customer_name}</td>
+                            <td><b>Village:</b> {village}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Mobile:</b> {mobile}</td>
+                            <td><b>Aadhaar:</b> N/A</td>
+                        </tr>
+                    </table>
+                    <hr style="margin: 5px 0;">
+                    <table width="100%" style="font-size: 13px; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <th align="left">Item Name</th>
+                            <th align="center">Qty</th>
+                            <th align="right">Price</th>
+                            <th align="right">Total</th>
+                        </tr>
+                        <tr>
+                            <td>{product_name}</td>
+                            <td align="center">{quantity}</td>
+                            <td align="right">₹{price:.1f}</td>
+                            <td align="right">₹{total_val:.1f}</td>
+                        </tr>
+                    </table>
+                    <hr style="margin: 5px 0;">
+                    <div style="text-align: right; font-weight: bold; font-size: 14px;">
+                        Grand Total: ₹ {total_val:.1f}
+                    </div>
+                    <br><br>
+                    <table width="100%" style="font-size: 12px; margin-top: 20px;">
+                        <tr>
+                            <td>-----------------------------------------</td>
+                            <td align="right">-----------------------------------------</td>
+                        </tr>
+                        <tr>
+                            <td>Farmer Signature</td>
+                            <td align="right">SMT Signature</td>
+                        </tr>
+                    </table>
+                </div>
+                """,
+            unsafe_allow_html=True,
+        )
+
+      st.markdown("### 📄 Bill Preview (Farmer Copy & Store Copy)")
+
+      # Farmer Copy
+      render_bill_copy("FARMER COPY")
+
+      # Dotted cutting line
+      st.markdown(
+          "<p style='text-align:center; border-bottom: 2px dashed"
+          " gray;'></p>",
+          unsafe_allow_html=True,
+      )
+      st.write("")
+
+      # Store Copy
+      render_bill_copy("STORE COPY")
 
   # --- DEPOSIT TAB ---
   elif menu == "Deposit":
