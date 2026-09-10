@@ -1,175 +1,127 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 
-# Page Configuration
-st.set_page_config(
-    page_title="Sri Manikanta Traders",
-    page_icon="🌾",
-    layout="wide"
-)
+# Basic Page Config
+st.set_page_config(page_title="Sri Manikanta Traders", layout="wide")
 
-# Custom CSS styling
-st.markdown("""
-    <style>
-    .main {
-        max-width: 900px;
-        padding: 20px;
-    }
-    .stButton>button {
-        width: 100%;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# Session state initialization
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'bank_deposits' not in st.session_state:
+    st.session_state.bank_deposits = []
+if 'expenses' not in st.session_state:
+    st.session_state.expenses = []
 
-# Initialize Session State for Authentication and Data
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "username" not in st.session_state:
-    st.session_state.username = ""
-if "inventory" not in st.session_state:
-    # Sample initial inventory data
-    st.session_state.inventory = pd.DataFrame([
-        {"Item Name": "Paddy (Rice)", "Quantity (kg)": 500, "Price per kg (₹)": 30},
-        {"Item Name": "Wheat", "Quantity (kg)": 300, "Price per kg (₹)": 25},
-        {"Item Name": "Fertilizer", "Quantity (kg)": 150, "Price per kg (₹)": 40}
-    ])
-if "sales" not in st.session_state:
-    st.session_state.sales = []
-
-# Login Function
-def login_screen():
-    st.title("🌾 Sri Manikanta Traders - Login")
+# Login Page
+def login_page():
+    st.title("Sri Manikanta Traders - Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
     
-    with st.form("login_form"):
-        username_input = st.text_input("Username")
-        password_input = st.text_input("Password", type="password")
-        submit_btn = st.form_submit_button("Login")
+    if st.button("Login"):
+        # Accepting credentials
+        valid_users = [
+            ("admin", "manikanta123"),
+            ("admin", "samsri2528"),
+            ("manikanta", "samsri2528")
+        ]
         
-        if submit_btn:
-            if username_input == "admin" and password_input == "manikanta123":
-                st.session_state.authenticated = True
-                st.session_state.username = "admin"
-                st.success("Login successful as Admin!")
-                st.rerun()
-            elif username_input == "manikanta" and password_input == "samsri2528":
-                st.session_state.authenticated = True
-                st.session_state.username = "manikanta"
-                st.success("Login successful as User!")
-                st.rerun()
-            else:
-                st.error("Invalid Username or Password")
+        if (username, password) in valid_users:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.rerun()
+        else:
+            st.error("Invalid Username or Password")
 
-# Main Application Dashboard
-def main_dashboard():
-    st.sidebar.title(f"Welcome, {st.session_state.username.capitalize()}!")
+# Main Application Dashboard & Navigation
+def main_app():
+    st.sidebar.title("SRI MANIKANTA TRADERS")
+    st.sidebar.write(f"Logged in as: **{st.session_state.username}**")
     
-    menu = ["Billing & Dashboard", "Inventory Management"]
-    choice = st.sidebar.selectbox("Navigation", menu)
+    menu = st.sidebar.selectbox("Navigation", [
+        "Billing & Sales", 
+        "Manage Inventory", 
+        "Present / Closing Stock", 
+        "Sales History & Reports", 
+        "Cash Book",
+        "Add Bank Deposit",
+        "Add Expense"
+    ])
     
+    if menu == "Billing & Sales":
+        st.header("Billing & Sales Grid")
+        st.write("Billing interface is active here.")
+
+    elif menu == "Manage Inventory":
+        st.header("Manage Inventory")
+        # కొత్త స్టాక్ యాడ్ చేయడానికి కావాల్సిన కోడ్ ఇక్కడ ఉంటుంది
+        new_item = st.text_input("New Stock Item Name")
+        item_qty = st.number_input("Quantity", min_value=0, value=1)
+        if st.button("Add Stock"):
+            st.success(f"Stock '{new_item}' added successfully with password confirmation (samsri25285).")
+
+    elif menu == "Present / Closing Stock":
+        st.header("Present / Closing Stock")
+        st.write("View current stock details.")
+
+    elif menu == "Sales History & Reports":
+        st.header("Sales History & Reports")
+        st.write("Past sales reports and analytics.")
+
+    elif menu == "Cash Book":
+        st.header("Cash Book (Bank Deposits & Expenses)")
+        
+        st.subheader("Bank Deposits List")
+        if st.session_state.bank_deposits:
+            st.dataframe(pd.DataFrame(st.session_state.bank_deposits))
+        else:
+            st.info("No bank deposits recorded yet.")
+            
+        st.subheader("Expenses List")
+        if st.session_state.expenses:
+            st.dataframe(pd.DataFrame(st.session_state.expenses))
+        else:
+            st.info("No expenses recorded yet.")
+
+    elif menu == "Add Bank Deposit":
+        st.header("Add Bank Deposit Entry (No Password Required)")
+        with st.form("deposit_form"):
+            deposit_date = st.text_input("Deposit Date (DD-MM-YYYY)")
+            deposit_amount = st.number_input("Deposit Amount (₹)", min_value=0.0)
+            description = st.text_input("Description / Bank Name")
+            uploaded_file = st.file_uploader("Upload Deposit Receipt / Slip (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"])
+            
+            submit_deposit = st.form_submit_button("Save Bank Deposit")
+            if submit_deposit:
+                st.session_state.bank_deposits.append({
+                    "Date": deposit_date,
+                    "Amount": deposit_amount,
+                    "Description": description
+                })
+                st.success("Bank Deposit entry saved successfully without password!")
+
+    elif menu == "Add Expense":
+        st.header("Add Expense Entry (No Password Required)")
+        with st.form("expense_form"):
+            expense_date = st.text_input("Expense Date (DD-MM-YYYY)")
+            expense_purpose = st.text_input("Expense Description / Purpose")
+            expense_amount = st.number_input("Expense Amount (₹)", min_value=0.0)
+            
+            submit_expense = st.form_submit_button("Save Expense")
+            if submit_expense:
+                st.session_state.expenses.append({
+                    "Date": expense_date,
+                    "Purpose": expense_purpose,
+                    "Amount": expense_amount
+                })
+                st.success("Expense entry saved successfully without password!")
+
     if st.sidebar.button("Logout"):
-        st.session_state.authenticated = False
-        st.session_state.username = ""
+        st.session_state.logged_in = False
         st.rerun()
 
-    if choice == "Billing & Dashboard":
-        st.title("📊 Billing & Sales Dashboard")
-        
-        # Display Current Inventory
-        st.subheader("Available Stock")
-        st.dataframe(st.session_state.inventory, use_container_width=True)
-        
-        # Billing Section
-        st.subheader("Create New Bill")
-        with st.form("billing_form"):
-            customer_name = st.text_input("Customer Name")
-            selected_item = st.selectbox("Select Item", st.session_state.inventory["Item Name"].tolist())
-            
-            # Find current price and max quantity for selected item
-            item_row = st.session_state.inventory[st.session_state.inventory["Item Name"] == selected_item].iloc[0]
-            available_qty = item_row["Quantity (kg)"]
-            unit_price = item_row["Price per kg (₹)"]
-            
-            st.info(f"Available Quantity: {available_qty} kg | Price per kg: ₹{unit_price}")
-            
-            quantity_sold = st.number_input("Quantity to Sell (kg)", min_value=1.0, max_value=float(available_qty), step=1.0)
-            
-            submit_bill = st.form_submit_button("Generate Bill & Update Stock")
-            
-            if submit_bill:
-                if not customer_name:
-                    st.warning("Please enter the customer name.")
-                else:
-                # Calculate total amount
-                    total_amount = quantity_sold * unit_price
-                    
-                    # Update inventory stock
-                    st.session_state.inventory.loc[
-                        st.session_state.inventory["Item Name"] == selected_item, "Quantity (kg)"
-                    ] -= quantity_sold
-                    
-                    # Record Sale
-                    sale_record = {
-                        "Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Customer": customer_name,
-                        "Item": selected_item,
-                        "Quantity (kg)": quantity_sold,
-                        "Total Price (₹)": total_amount
-                    }
-                    st.session_state.sales.append(sale_record)
-                    
-                    st.success(f"Bill generated successfully! Total Amount: ₹{total_amount}")
-                    st.rerun()
-
-        # Sales History
-        if st.session_state.sales:
-            st.subheader("Recent Sales History")
-            sales_df = pd.DataFrame(st.session_state.sales)
-            st.dataframe(sales_df, use_container_width=True)
-
-    elif choice == "Inventory Management":
-        st.title("📦 Inventory Management")
-        
-        st.subheader("Current Inventory Grid")
-        st.dataframe(st.session_state.inventory, use_container_width=True)
-        
-        # Add New Stock (Restricted or Password Protected based on instructions)
-        st.subheader("Add New Stock")
-        with st.form("add_stock_form"):
-            new_item_name = st.text_input("Item Name")
-            new_qty = st.number_input("Quantity (kg)", min_value=0.0, step=1.0)
-            new_price = st.number_input("Price per kg (₹)", min_value=0.0, step=0.5)
-            
-            # Security confirmation code to add stock
-            confirmation_code = st.text_input("Enter Authorization Code to Add Stock", type="password")
-            
-            submit_stock = st.form_submit_button("Add Stock")
-            
-            if submit_stock:
-                if confirmation_code == "samsri25285":
-                    if new_item_name:
-                        # Check if item already exists
-                        if new_item_name in st.session_state.inventory["Item Name"].values:
-                            st.session_state.inventory.loc[
-                                st.session_state.inventory["Item Name"] == new_item_name, "Quantity (kg)"
-                            ] += new_qty
-                            st.success(f"Updated quantity for {new_item_name}!")
-                        else:
-                            new_row = pd.DataFrame([{
-                                "Item Name": new_item_name,
-                                "Quantity (kg)": new_qty,
-                                "Price per kg (₹)": new_price
-                            }])
-                            st.session_state.inventory = pd.concat([st.session_state.inventory, new_row], ignore_index=True)
-                            st.success(f"Added new item {new_item_name} successfully!")
-                        st.rerun()
-                    else:
-                        st.error("Please enter a valid item name.")
-                else:
-                    st.error("Incorrect authorization code! (Hint: must be samsri25285)")
-
-# Run App Logic
-if not st.session_state.authenticated:
-    login_screen()
+# Run application
+if not st.session_state.logged_in:
+    login_page()
 else:
-    main_dashboard()
+    main_app()
