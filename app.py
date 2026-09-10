@@ -59,7 +59,7 @@ def load_cash_deposits():
         if "Receipt Name" not in df.columns:
             df["Receipt Name"] = "No Receipt"
         if "Status" not in df.columns:
-            df["Status"] = "Approved" # Old records default to approved
+            df["Status"] = "Approved"
         if not df.empty and "Date" in df.columns:
             df["Date"] = pd.to_datetime(df["Date"], errors='coerce').dt.strftime('%d-%m-%Y').fillna(df["Date"])
         df.to_excel(CASH_BOOK_FILE, index=False)
@@ -75,6 +75,8 @@ def save_cash_deposits(df):
 def load_expenses():
     if os.path.exists(EXPENSES_FILE):
         df = pd.read_excel(EXPENSES_FILE)
+        if "Receipt Name" not in df.columns:
+            df["Receipt Name"] = "No Receipt"
         if "Status" not in df.columns:
             df["Status"] = "Approved"
         if not df.empty and "Date" in df.columns:
@@ -82,7 +84,7 @@ def load_expenses():
         df.to_excel(EXPENSES_FILE, index=False)
         return df
     else:
-        df = pd.DataFrame(columns=["Date", "Expense Name", "Amount (₹)", "Status"])
+        df = pd.DataFrame(columns=["Date", "Expense Name", "Amount (₹)", "Receipt Name", "Status"])
         df.to_excel(EXPENSES_FILE, index=False)
         return df
 
@@ -100,7 +102,6 @@ if "cart" not in st.session_state:
     st.session_state["cart"] = []
 
 if not st.session_state["authenticated"]:
-    # Display banner or title
     if os.path.exists("banner.png"):
         st.image("banner.png", use_container_width=True)
     else:
@@ -143,7 +144,11 @@ else:
     st.sidebar.title("🌾 SRI MANIKANTA TRADERS")
     st.sidebar.markdown(f"**Logged in as:** `{st.session_state['role']}`")
     
-    menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Manage Inventory", "Present / Closing Stock", "Sales History & Reports", "Cash Book & Expenses"])
+    # Dynamic Navigation based on Role
+    if st.session_state["role"] == "Admin":
+        menu = st.sidebar.radio("Navigation", ["Manage Inventory", "Cash Book & Expenses"])
+    else:
+        menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Manage Inventory", "Present / Closing Stock", "Sales History & Reports", "Cash Book & Expenses"])
     
     if st.sidebar.button("Logout"):
         st.session_state["authenticated"] = False
@@ -566,9 +571,7 @@ else:
     elif menu == "Cash Book & Expenses":
         st.title("📒 Cash Book, Bank Deposits & Expenses")
         
-        # Only Approved deposits and expenses reduce/affect hand cash balance
         total_revenue = sales_df["Total Amount"].sum() if not sales_df.empty else 0.0
-        
         approved_deposits = cash_df[cash_df["Status"] == "Approved"]["Deposit Amount (₹)"].sum() if not cash_df.empty and "Status" in cash_df.columns else 0.0
         approved_expenses = expenses_df[expenses_df["Status"] == "Approved"]["Amount (₹)"].sum() if not expenses_df.empty and "Status" in expenses_df.columns else 0.0
         
@@ -586,7 +589,6 @@ else:
             
         st.markdown("---")
         
-        # Section tabs for Add and Approval
         tab1, tab2 = st.tabs(["➕ Add Entry (Staff / Admin)", "🛡️ Owner Authorization / Approvals"])
         
         with tab1:
@@ -598,7 +600,7 @@ else:
                     dep_desc = st.text_input("Description / Bank Name", value="Bank Deposit")
                 with col_d2:
                     dep_amount = st.number_input("Deposit Amount (₹)", min_value=1.0, value=1000.0)
-                    receipt_file = st.file_uploader("📎 Upload Deposit Receipt / Slip (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"])
+                    receipt_file = st.file_uploader("📎 Upload Deposit Receipt / Slip (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"], key="dep_file_up")
                     
                 if st.form_submit_button("Submit Bank Deposit"):
                     receipt_name = "No Receipt"
@@ -608,9 +610,7 @@ else:
                         with open(os.path.join("receipts", receipt_file.name), "wb") as f:
                             f.write(receipt_file.getbuffer())
 
-                    # If Admin creates it, it can be auto-approved or pending, let's keep it Pending unless Admin overrides, but per instructions staff/billing adds as pending or both. Let's make new entries 'Pending' until authorized by owner.
                     initial_status = "Approved" if st.session_state["role"] == "Admin" else "Pending"
-
                     new_dep = pd.DataFrame([[dep_date_str, dep_desc, dep_amount, receipt_name, initial_status]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name", "Status"])
                     cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
                     save_cash_deposits(cash_df)
@@ -618,7 +618,7 @@ else:
                     st.rerun()
 
             st.markdown("---")
-            st.markdown("### 💸 Add Expense Entry")
+            st.markdown("### 💸 Add Expense Entry & Attach Receipt")
             with st.form("expense_add_form"):
                 col_e1, col_e2 = st.columns(2)
                 with col_e1:
@@ -626,10 +626,18 @@ else:
                     exp_name = st.text_input("Expense Description / Reason", value="Shop Rent / Electricity / Transport")
                 with col_e2:
                     exp_amount = st.number_input("Expense Amount (₹)", min_value=1.0, value=500.0)
+                    exp_receipt_file = st.file_uploader("📎 Upload Expense Receipt / Bill (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"], key="exp_file_up")
                 
                 if st.form_submit_button("Submit Expense"):
+                    exp_receipt_name = "No Receipt"
+                    if exp_receipt_file is not None:
+                        exp_receipt_name = exp_receipt_file.name
+                        os.makedirs("receipts", exist_ok=True)
+                        with open(os.path.join("receipts", exp_receipt_file.name), "wb") as f:
+                            f.write(exp_receipt_file.getbuffer())
+
                     initial_exp_status = "Approved" if st.session_state["role"] == "Admin" else "Pending"
-                    new_exp = pd.DataFrame([[exp_date_str, exp_name, exp_amount, initial_exp_status]], columns=["Date", "Expense Name", "Amount (₹)", "Status"])
+                    new_exp = pd.DataFrame([[exp_date_str, exp_name, exp_amount, exp_receipt_name, initial_exp_status]], columns=["Date", "Expense Name", "Amount (₹)", "Receipt Name", "Status"])
                     expenses_df = pd.concat([expenses_df, new_exp], ignore_index=True)
                     save_expenses(expenses_df)
                     st.success(f"✅ Expense of ₹ {exp_amount:.2f} submitted successfully! Status: **{initial_exp_status}**")
@@ -648,6 +656,12 @@ else:
                         col_p1, col_p2, col_p3 = st.columns([3, 1, 1])
                         with col_p1:
                             st.write(f"📅 **Date:** {row['Date']} | 🏦 **Desc:** {row['Description']} | 💵 **Amount:** ₹{row['Deposit Amount (₹)']} | 📎 **Receipt:** {row['Receipt Name']}")
+                            rec_path = os.path.join("receipts", str(row['Receipt Name']))
+                            if row['Receipt Name'] != "No Receipt" and os.path.exists(rec_path):
+                                if row['Receipt Name'].lower().endswith(('.png', '.jpg', '.jpeg')):
+                                    st.image(rec_path, caption="Deposit Receipt", width=250)
+                                with open(rec_path, "rb") as file_btn:
+                                    st.download_button(label="📥 Download Deposit Receipt", data=file_btn, file_name=row['Receipt Name'], key=f"dl_pend_dep_{idx}")
                         with col_p2:
                             if st.button("✅ Authorize / Approve", key=f"app_dep_{idx}"):
                                 cash_df.loc[idx, "Status"] = "Approved"
@@ -670,7 +684,13 @@ else:
                     for idx, row in pending_expenses.iterrows():
                         col_ex1, col_ex2, col_ex3 = st.columns([3, 1, 1])
                         with col_ex1:
-                            st.write(f"📅 **Date:** {row['Date']} | 💸 **Expense:** {row['Expense Name']} | 💵 **Amount:** ₹{row['Amount (₹)']}")
+                            st.write(f"📅 **Date:** {row['Date']} | 💸 **Expense:** {row['Expense Name']} | 💵 **Amount:** ₹{row['Amount (₹)']} | 📎 **Receipt:** {row['Receipt Name']}")
+                            rec_path = os.path.join("receipts", str(row['Receipt Name']))
+                            if row['Receipt Name'] != "No Receipt" and os.path.exists(rec_path):
+                                if row['Receipt Name'].lower().endswith(('.png', '.jpg', '.jpeg')):
+                                    st.image(rec_path, caption="Expense Receipt", width=250)
+                                with open(rec_path, "rb") as file_btn:
+                                    st.download_button(label="📥 Download Expense Receipt", data=file_btn, file_name=row['Receipt Name'], key=f"dl_pend_exp_{idx}")
                         with col_ex2:
                             if st.button("✅ Authorize / Approve", key=f"app_exp_{idx}"):
                                 expenses_df.loc[idx, "Status"] = "Approved"
@@ -729,14 +749,49 @@ else:
             st.info("No bank deposits recorded yet.")
 
         st.markdown("---")
-        st.markdown("### 💸 Expenses History")
+        st.markdown("### 💸 Expenses History & Receipts")
         if not expenses_df.empty:
-            st.dataframe(expenses_df.iloc[::-1].reset_index(drop=True), use_container_width=True)
+            display_exp_df = expenses_df.iloc[::-1].reset_index(drop=True)
+            for idx, row in display_exp_df.iterrows():
+                rec_name = row['Receipt Name'] if 'Receipt Name' in row and pd.notna(row['Receipt Name']) else "No Receipt"
+                status_badge = "🟢 Approved" if row.get('Status', 'Approved') == 'Approved' else "🟡 Pending Authorization"
+                with st.expander(f"[{status_badge}] Date: {row['Date']} | 💸 {row['Expense Name']} | Amount: ₹ {row['Amount (₹)']}"):
+                    col_e1, col_e2 = st.columns([2, 1])
+                    with col_e1:
+                        st.write(f"**Expense Date:** {row['Date']}")
+                        st.write(f"**Description:** {row['Expense Name']}")
+                        st.write(f"**Amount:** ₹ {row['Amount (₹)']}")
+                        st.write(f"**Status:** {row.get('Status', 'Approved')}")
+                        st.write(f"**Attached File:** {rec_name}")
+                        
+                        rec_path = os.path.join("receipts", str(rec_name))
+                        if rec_name != "No Receipt" and os.path.exists(rec_path):
+                            if rec_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                                st.image(rec_path, caption="Expense Receipt Preview", use_container_width=True)
+                            with open(rec_path, "rb") as file_btn:
+                                st.download_button(
+                                    label="📥 Download Expense Receipt File",
+                                    data=file_btn,
+                                    file_name=rec_name,
+                                    mime="application/octet-stream",
+                                    key=f"dl_exp_rec_{idx}"
+                                )
+                        else:
+                            st.info("No receipt uploaded for this expense.")
+                    with col_e2:
+                        st.markdown("<br><br>", unsafe_allow_html=True)
+                        orig_idx = len(expenses_df) - 1 - idx
+                        if st.button(f"🗑️ Delete Expense", key=f"del_exp_{idx}T"):
+                            expenses_df = expenses_df.drop(orig_idx).reset_index(drop=True)
+                            save_expenses(expenses_df)
+                            st.success("Deleted expense record successfully!")
+                            st.rerun()
         else:
             st.info("No expense entries recorded yet.")
 
-        st.markdown("### 💰 Sales Revenue Transaction Ledger")
-        if not sales_df.empty:
-            display_sales_ledger = sales_df.iloc[::-1].reset_index(drop=True)
-            cols_to_show = [c for c in ["Date", "Bill No", "Customer Name", "Village", "Total Amount"] if c in display_sales_ledger.columns]
-            st.dataframe(display_sales_ledger[cols_to_show], use_container_width=True)
+        if st.session_state["role"] == "Staff":
+            st.markdown("### 💰 Sales Revenue Transaction Ledger")
+            if not sales_df.empty:
+                display_sales_ledger = sales_df.iloc[::-1].reset_index(drop=True)
+                cols_to_show = [c for c in ["Date", "Bill No", "Customer Name", "Village", "Total Amount"] if c in display_sales_ledger.columns]
+                st.dataframe(display_sales_ledger[cols_to_show], use_container_width=True)
