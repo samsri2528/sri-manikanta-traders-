@@ -96,16 +96,18 @@ if not st.session_state["authenticated"]:
         st.write("Manage inventory, sales, and digital billing seamlessly.")
     with col2:
         with st.container():
-            st.markdown("### 🔐 ADMIN LOGIN")
+            st.markdown("### 🔐 LOGIN")
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             if st.button("Sign In", use_container_width=True):
-                if username == "admin" and password == "samsri2528":
+                if (username == "admin" and password == "samsri2528") or (username == "manikanta" and password == "samsri2528"):
                     st.session_state["authenticated"] = True
+                    st.session_state["username"] = username
                     st.rerun()
                 else:
                     st.error("❌ Invalid Username or Password")
 else:
+    current_user = st.session_state.get("username", "admin")
     st.sidebar.title("🌾 SRI MANIKANTA TRADERS")
     menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Manage Inventory", "Present / Closing Stock", "Sales History & Reports", "Cash Book"])
     
@@ -549,7 +551,7 @@ else:
             
         st.markdown("---")
         
-        st.markdown("### ➕ Add Bank Deposit Entry & Attach Receipt (Requires Authorization)")
+        st.markdown("### ➕ Add Bank Deposit Entry & Attach Receipt (Owner Authorization)")
         with st.form("bank_deposit_form"):
             col_d1, col_d2 = st.columns(2)
             with col_d1:
@@ -559,11 +561,13 @@ else:
                 dep_amount = st.number_input("Deposit Amount (₹)", min_value=1.0, value=1000.0)
                 receipt_file = st.file_uploader("📎 Upload Deposit Receipt / Slip (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"])
             
-            bank_auth_user = st.text_input("Authorization Username (Bank Deposits)")
-            bank_auth_pass = st.text_input("Authorization Password (Bank Deposits)", type="password")
+            st.markdown("---")
+            st.markdown("#### 👑 Owner Authorization")
+            owner_auth_user = st.text_input("Owner ID", value="admin")
+            owner_auth_pass = st.text_input("Owner Password", type="password", key="bank_owner_pass")
                 
             if st.form_submit_button("Save Bank Deposit & Receipt"):
-                if bank_auth_user == "manikanta" and bank_auth_pass == "samsri2528":
+                if owner_auth_user == "admin" and owner_auth_pass == "samsri2528":
                     receipt_name = "No Receipt"
                     if receipt_file is not None:
                         receipt_name = receipt_file.name
@@ -574,34 +578,35 @@ else:
                     new_dep = pd.DataFrame([[dep_date_str, dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
                     cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
                     save_cash_deposits(cash_df)
-                    st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt recorded successfully!")
+                    st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt authorized and recorded successfully!")
                     st.rerun()
                 else:
-                    st.error("❌ Invalid User ID or Password for Bank Deposits authorization!")
+                    st.error("❌ Invalid Owner ID or Password for authorization!")
 
         st.markdown("---")
-        st.markdown("### 💸 Add Expense Entry (Requires Authorization)")
+        st.markdown("### 💸 Add Expense Entry (Owner Authorization)")
         with st.form("expense_entry_form"):
             exp_date_str = st.text_input("Expense Date (DD-MM-YYYY)", value=datetime.now().strftime('%d-%m-%Y'))
             exp_desc = st.text_input("Expense Description / Purpose")
             exp_amount = st.number_input("Expense Amount (₹)", min_value=1.0, value=100.0)
             
-            exp_auth_user = st.text_input("Authorization Username (Expenses)")
-            exp_auth_pass = st.text_input("Authorization Password (Expenses)", type="password")
+            st.markdown("---")
+            st.markdown("#### 👑 Owner Authorization")
+            exp_owner_user = st.text_input("Owner ID", value="admin", key="exp_owner_id")
+            exp_owner_pass = st.text_input("Owner Password", type="password", key="exp_owner_pass")
             
             if st.form_submit_button("Save Expense"):
-                if exp_auth_user == "manikanta" and exp_auth_pass == "samsri2528":
+                if exp_owner_user == "admin" and exp_owner_pass == "samsri2528":
                     if exp_desc:
-                        # Append as a negative deposit or separate tracking logic
                         new_exp = pd.DataFrame([[exp_date_str, f"EXPENSE: {exp_desc}", -exp_amount, "No Receipt"]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
                         cash_df = pd.concat([cash_df, new_exp], ignore_index=True)
                         save_cash_deposits(cash_df)
-                        st.success(f"✅ Expense of ₹ {exp_amount:.2f} recorded successfully!")
+                        st.success(f"✅ Expense of ₹ {exp_amount:.2f} authorized and recorded successfully!")
                         st.rerun()
                     else:
                         st.warning("⚠️ Please provide an expense description.")
                 else:
-                    st.error("❌ Invalid User ID or Password for Expenses authorization!")
+                    st.error("❌ Invalid Owner ID or Password for authorization!")
             
         st.markdown("### 🏦 Bank Deposit & Transaction History")
         if not cash_df.empty:
@@ -634,15 +639,15 @@ else:
                     with col_r2:
                         st.markdown("<br><br>", unsafe_allow_html=True)
                         orig_idx = len(cash_df) - 1 - idx
-                        del_auth_pass = st.text_input("Password to Delete", type="password", key=f"del_pass_{idx}")
+                        del_owner_pass = st.text_input("Owner Password to Delete", type="password", key=f"del_pass_{idx}")
                         if st.button(f"🗑️ Delete Entry", key=f"del_dep_{idx}T"):
-                            if del_auth_pass == "samsri2528":
+                            if del_owner_pass == "samsri2528":
                                 cash_df = cash_df.drop(orig_idx).reset_index(drop=True)
                                 save_cash_deposits(cash_df)
                                 st.success("Deleted record successfully!")
                                 st.rerun()
                             else:
-                                st.error("❌ Incorrect password for deletion!")
+                                st.error("❌ Incorrect owner password for deletion!")
         else:
             st.info("No bank deposits or expenses recorded yet.")
 
