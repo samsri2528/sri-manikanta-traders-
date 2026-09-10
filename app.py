@@ -30,7 +30,7 @@ def load_inventory():
     if os.path.exists(INVENTORY_FILE):
         return pd.read_excel(INVENTORY_FILE)
     else:
-        df = pd.DataFrame(columns=["Item Name", "Category", "Quantity", "Price (₹)"])
+        df = pd.DataFrame(columns=["Item Name", "Category", "Quantity", "Price (₹)", "Invoice Receipt"])
         df.to_excel(INVENTORY_FILE, index=False)
         return df
 
@@ -148,7 +148,7 @@ else:
     if st.session_state["role"] == "Admin":
         menu = st.sidebar.radio("Navigation", ["Manage Inventory", "Cash Book & Expenses"])
     else:
-        menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Manage Inventory", "Present / Closing Stock", "Sales History & Reports", "Cash Book & Expenses"])
+        menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Present / Closing Stock", "Sales History & Reports", "Cash Book & Expenses"])
     
     if st.sidebar.button("Logout"):
         st.session_state["authenticated"] = False
@@ -162,27 +162,46 @@ else:
     cash_df = load_cash_deposits()
     expenses_df = load_expenses()
 
+    # Admin Dashboard Notification Alert
+    if st.session_state["role"] == "Admin":
+        pend_dep_count = len(cash_df[cash_df["Status"] == "Pending"]) if not cash_df.empty and "Status" in cash_df.columns else 0
+        pend_exp_count = len(expenses_df[expenses_df["Status"] == "Pending"]) if not expenses_df.empty and "Status" in expenses_df.columns else 0
+        if pend_dep_count > 0 or pend_exp_count > 0:
+            st.warning(f"🔔 **Notification:** You have **{pend_dep_count}** pending bank deposit(s) and **{pend_exp_count}** pending expense(s) awaiting your authorization in 'Cash Book & Expenses'.")
+
     if menu == "Manage Inventory":
-        st.title("📦 Inventory & Stock Management")
+        st.title("📦 Inventory & Stock Management (Admin)")
         with st.form("add_item_form"):
             col1, col2 = st.columns(2)
             with col1:
                 new_item = st.text_input("Product / Item Name")
                 new_category = st.selectbox("Category", ["Seeds", "Fertilizers", "Pesticides", "Animal Feed", "Others"])
+                inv_receipt = st.file_uploader("📎 Attach Purchase Invoice / Bill (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"])
             with col2:
                 new_qty = st.number_input("Initial Quantity", min_value=0.0, value=10.0)
                 new_price = st.number_input("Price per Unit (₹)", min_value=0.0, value=100.0)
+            
             if st.form_submit_button("Add Item to Inventory"):
                 if new_item:
-                    new_row = pd.DataFrame([[new_item, new_category, new_qty, new_price]], columns=["Item Name", "Category", "Quantity", "Price (₹)"])
+                    receipt_filename = "No Invoice"
+                    if inv_receipt is not None:
+                        receipt_filename = inv_receipt.name
+                        os.makedirs("receipts", exist_ok=True)
+                        with open(os.path.join("receipts", inv_receipt.name), "wb") as f:
+                            f.write(inv_receipt.getbuffer())
+
+                    if "Invoice Receipt" not in inventory_df.columns:
+                        inventory_df["Invoice Receipt"] = "No Invoice"
+
+                    new_row = pd.DataFrame([[new_item, new_category, new_qty, new_price, receipt_filename]], columns=["Item Name", "Category", "Quantity", "Price (₹)", "Invoice Receipt"])
                     inventory_df = pd.concat([inventory_df, new_row], ignore_index=True)
                     save_inventory(inventory_df)
-                    st.success(f"✅ Added '{new_item}' successfully!")
+                    st.success(f"✅ Added '{new_item}' successfully with invoice!")
                     st.rerun()
                 else:
                     st.warning("⚠️ Enter item name.")
 
-        st.markdown("### 📋 Current Stock List")
+        st.markdown("### 📋 Current Stock List & Invoices")
         if not inventory_df.empty:
             st.dataframe(inventory_df, use_container_width=True)
 
@@ -279,20 +298,31 @@ else:
         with col_b3:
             mobile_no = st.text_input("Mobile No (10 Digits)", max_chars=10)
             
+        # Smart Farmer Auto-Fill based on mobile input (supports 4+ digits)
         default_cust_name = ""
         default_village = "Pedda Harivanam"
         default_aadhaar = ""
         
-        if mobile_no and len(mobile_no) == 10 and not sales_df.empty:
-            match = sales_df[sales_df["Mobile"].astype(str) == str(mobile_no)]
-            if not match.empty:
-                default_cust_name = match.iloc[-1]["Customer Name"]
-                if "Village" in match.columns:
-                    default_village = match.iloc[-1]["Village"]
-                if "Aadhaar No" in match.columns:
-                    default_aadhaar = str(match.iloc[-1]["Aadhaar No"])
-                    if default_aadhaar == "nan":
-                        default_aadhaar = ""
+        if mobile_no and len(mobile_no) >= 4 and not sales_df.empty:
+            matched_farmers = sales_df[sales_df["Mobile"].astype(str).str.startswith(str(mobile_no))]
+            if not matched_farmers.empty:
+                unique_farmers = matched_farmers[["Customer Name", "Village", "Mobile", "Aadhaar No"]].drop_duplicates().values.tolist()
+                if len(unique_farmers) == 1:
+                    default_cust_name = unique_farmers[0][0]
+                    default_village = unique_farmers[0][1] if pd.notna(unique_farmers[0][1]) else "Pedda Harivanam"
+                    default_aadhaar = str(unique_farmers[0][2]) if pd.notna(unique_farmers[0][2]) else ""
+                    if default_aadhaar == "nan": default_aadhaar = ""
+                else:
+                    st.info(f"💡 Found {len(unique_farmers)} matching farmer(s) in history for prefix `{mobile_no}`")
+                    farmer_options = [f"{f[0]} - {f[2]} ({f[1]})" for f in unique_farmers]
+                    chosen_farmer = st.selectbox("Select Existing Farmer", farmer_options)
+                    for f in unique_farmers:
+                        if f"{f[0]} - {f[2]} ({f[1]})" == chosen_farmer:
+                            default_cust_name = f[0]
+                            default_village = f[1] if pd.notna(f[1]) else "Pedda Harivanam"
+                            default_aadhaar = str(f[3]) if pd.notna(f[3]) else ""
+                            if default_aadhaar == "nan": default_aadhaar = ""
+                            break
 
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
@@ -304,7 +334,7 @@ else:
 
         st.markdown("### 🛒 Add Items to Bill Cart")
         if inventory_df.empty:
-            st.warning("⚠️ Please add items in 'Manage Inventory' first!")
+            st.warning("⚠️ Please ask Admin to add items in 'Manage Inventory' first!")
         else:
             item_list = inventory_df["Item Name"].tolist()
             col_item1, col_item2, col_item3, col_item4 = st.columns([2, 1, 1, 1])
@@ -315,12 +345,13 @@ else:
             available_stock = float(item_row["Quantity"].values[0]) if not item_row.empty else 0.0
             default_price = float(item_row["Price (₹)"].values[0]) if not item_row.empty else 100.0
             
-            st.info(f"📦 Available Stock for **{selected_item}**: **{available_stock}** units/kg")
+            st.info(f"📦 Available Stock for **{selected_item}**: **{available_stock}** units/kg | Price: ₹{default_price} (Fixed by Admin)")
 
             with col_item2:
                 qty = st.number_input("Quantity", min_value=0.1, max_value=max(0.1, available_stock), value=1.0)
             with col_item3:
-                price = st.number_input("Price (₹)", min_value=0.0, value=default_price)
+                # Staff cannot edit price, showing fixed price box
+                price = st.number_input("Price (₹)", value=default_price, disabled=True)
             with col_item4:
                 st.markdown("<br>", unsafe_allow_html=True)
                 add_to_cart_btn = st.button("➕ Add Item")
@@ -329,11 +360,11 @@ else:
                 if qty > available_stock:
                     st.error(f"❌ Cannot add! Only {available_stock} available in stock.")
                 else:
-                    total_item_amt = qty * price
+                    total_item_amt = qty * default_price
                     st.session_state["cart"].append({
                         "Item Name": selected_item,
                         "Qty": qty,
-                        "Price": price,
+                        "Price": default_price,
                         "Total": total_item_amt
                     })
                     st.success(f"Added {selected_item} to cart!")
@@ -489,8 +520,7 @@ else:
                         b_vill = bill_rows.iloc[0]["Village"] if "Village" in bill_rows.columns else "Pedda Harivanam"
                         b_mob = bill_rows.iloc[0]["Mobile"]
                         b_aadhaar = bill_rows.iloc[0]["Aadhaar No"] if "Aadhaar No" in bill_rows.columns else ""
-                        if pd.isna(b_aadhaar):
-                            b_aadhaar = ""
+                        if pd.isna(b_aadhaar): b_aadhaar = ""
                         
                         reprint_items = []
                         for _, row in bill_rows.iterrows():
