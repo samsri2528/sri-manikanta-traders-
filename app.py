@@ -77,7 +77,6 @@ if "cart" not in st.session_state:
     st.session_state["cart"] = []
 
 if not st.session_state["authenticated"]:
-    # Display the beautiful banner image if it exists
     if os.path.exists("banner.png"):
         st.image("banner.png", use_container_width=True)
     else:
@@ -123,6 +122,8 @@ else:
 
     if menu == "Manage Inventory":
         st.title("📦 Inventory & Stock Management")
+        
+        st.markdown("### ➕ Add New Stock (Requires Authorization)")
         with st.form("add_item_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -130,16 +131,22 @@ else:
                 new_category = st.selectbox("Category", ["Seeds", "Fertilizers", "Pesticides", "Animal Feed", "Others"])
             with col2:
                 new_qty = st.number_input("Initial Quantity", min_value=0.0, value=10.0)
-                new_price = st.number_input("Price per Unit (₹)", min_value=0.0, value=100.0)
+                new_price = st.number_input("Fixed Price per Unit (₹)", min_value=0.0, value=100.0)
+            
+            stock_auth_pass = st.text_input("Enter Password to Add New Stock", type="password")
+            
             if st.form_submit_button("Add Item to Inventory"):
-                if new_item:
-                    new_row = pd.DataFrame([[new_item, new_category, new_qty, new_price]], columns=["Item Name", "Category", "Quantity", "Price (₹)"])
-                    inventory_df = pd.concat([inventory_df, new_row], ignore_index=True)
-                    save_inventory(inventory_df)
-                    st.success(f"✅ Added '{new_item}' successfully!")
-                    st.rerun()
+                if stock_auth_pass == "samsri25285":
+                    if new_item:
+                        new_row = pd.DataFrame([[new_item, new_category, new_qty, new_price]], columns=["Item Name", "Category", "Quantity", "Price (₹)"])
+                        inventory_df = pd.concat([inventory_df, new_row], ignore_index=True)
+                        save_inventory(inventory_df)
+                        st.success(f"✅ Added '{new_item}' successfully!")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Enter item name.")
                 else:
-                    st.warning("⚠️ Enter item name.")
+                    st.error("❌ Incorrect password for adding new stock! (Required: samsri25285)")
 
         st.markdown("### 📋 Current Stock List")
         if not inventory_df.empty:
@@ -266,21 +273,19 @@ else:
             st.warning("⚠️ Please add items in 'Manage Inventory' first!")
         else:
             item_list = inventory_df["Item Name"].tolist()
-            col_item1, col_item2, col_item3, col_item4 = st.columns([2, 1, 1, 1])
+            col_item1, col_item2, col_item3 = st.columns([2, 1, 1])
             with col_item1:
                 selected_item = st.selectbox("Select Product", item_list)
             
             item_row = inventory_df[inventory_df["Item Name"] == selected_item]
             available_stock = float(item_row["Quantity"].values[0]) if not item_row.empty else 0.0
-            default_price = float(item_row["Price (₹)"].values[0]) if not item_row.empty else 100.0
+            fixed_price = float(item_row["Price (₹)"].values[0]) if not item_row.empty else 100.0
             
-            st.info(f"📦 Available Stock for **{selected_item}**: **{available_stock}** units/kg")
+            st.info(f"📦 Available Stock for **{selected_item}** | 🔒 Fixed Price: **₹{fixed_price} per unit**")
 
             with col_item2:
                 qty = st.number_input("Quantity", min_value=0.1, max_value=max(0.1, available_stock), value=1.0)
             with col_item3:
-                price = st.number_input("Price (₹)", min_value=0.0, value=default_price)
-            with col_item4:
                 st.markdown("<br>", unsafe_allow_html=True)
                 add_to_cart_btn = st.button("➕ Add Item")
 
@@ -288,14 +293,14 @@ else:
                 if qty > available_stock:
                     st.error(f"❌ Cannot add! Only {available_stock} available in stock.")
                 else:
-                    total_item_amt = qty * price
+                    total_item_amt = qty * fixed_price
                     st.session_state["cart"].append({
                         "Item Name": selected_item,
                         "Qty": qty,
-                        "Price": price,
+                        "Price": fixed_price,
                         "Total": total_item_amt
                     })
-                    st.success(f"Added {selected_item} to cart!")
+                    st.success(f"Added {selected_item} to cart at fixed price ₹{fixed_price}!")
 
             if len(st.session_state["cart"]) > 0:
                 st.markdown("#### 🛍️ Current Cart Items")
@@ -528,7 +533,7 @@ else:
             st.dataframe(category_summary, use_container_width=True)
 
     elif menu == "Cash Book":
-        st.title("📒 Cash Book & Bank Deposits")
+        st.title("📒 Cash Book, Bank Deposits & Expenses")
         
         total_revenue = sales_df["Total Amount"].sum() if not sales_df.empty else 0.0
         total_deposited = cash_df["Deposit Amount (₹)"].sum() if not cash_df.empty else 0.0
@@ -544,7 +549,7 @@ else:
             
         st.markdown("---")
         
-        st.markdown("### ➕ Add Bank Deposit Entry & Attach Receipt")
+        st.markdown("### ➕ Add Bank Deposit Entry & Attach Receipt (Requires Authorization)")
         with st.form("bank_deposit_form"):
             col_d1, col_d2 = st.columns(2)
             with col_d1:
@@ -553,22 +558,52 @@ else:
             with col_d2:
                 dep_amount = st.number_input("Deposit Amount (₹)", min_value=1.0, value=1000.0)
                 receipt_file = st.file_uploader("📎 Upload Deposit Receipt / Slip (Image/PDF)", type=["png", "jpg", "jpeg", "pdf"])
+            
+            bank_auth_user = st.text_input("Authorization Username (Bank Deposits)")
+            bank_auth_pass = st.text_input("Authorization Password (Bank Deposits)", type="password")
                 
             if st.form_submit_button("Save Bank Deposit & Receipt"):
-                receipt_name = "No Receipt"
-                if receipt_file is not None:
-                    receipt_name = receipt_file.name
-                    os.makedirs("receipts", exist_ok=True)
-                    with open(os.path.join("receipts", receipt_file.name), "wb") as f:
-                        f.write(receipt_file.getbuffer())
+                if bank_auth_user == "manikanta" and bank_auth_pass == "samsri2528":
+                    receipt_name = "No Receipt"
+                    if receipt_file is not None:
+                        receipt_name = receipt_file.name
+                        os.makedirs("receipts", exist_ok=True)
+                        with open(os.path.join("receipts", receipt_file.name), "wb") as f:
+                            f.write(receipt_file.getbuffer())
 
-                new_dep = pd.DataFrame([[dep_date_str, dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
-                cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
-                save_cash_deposits(cash_df)
-                st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt recorded successfully!")
-                st.rerun()
-                
-        st.markdown("### 🏦 Bank Deposit History & Receipts")
+                    new_dep = pd.DataFrame([[dep_date_str, dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
+                    cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
+                    save_cash_deposits(cash_df)
+                    st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt recorded successfully!")
+                    st.rerun()
+                else:
+                    st.error("❌ Invalid User ID or Password for Bank Deposits authorization!")
+
+        st.markdown("---")
+        st.markdown("### 💸 Add Expense Entry (Requires Authorization)")
+        with st.form("expense_entry_form"):
+            exp_date_str = st.text_input("Expense Date (DD-MM-YYYY)", value=datetime.now().strftime('%d-%m-%Y'))
+            exp_desc = st.text_input("Expense Description / Purpose")
+            exp_amount = st.number_input("Expense Amount (₹)", min_value=1.0, value=100.0)
+            
+            exp_auth_user = st.text_input("Authorization Username (Expenses)")
+            exp_auth_pass = st.text_input("Authorization Password (Expenses)", type="password")
+            
+            if st.form_submit_button("Save Expense"):
+                if exp_auth_user == "manikanta" and exp_auth_pass == "samsri2528":
+                    if exp_desc:
+                        # Append as a negative deposit or separate tracking logic
+                        new_exp = pd.DataFrame([[exp_date_str, f"EXPENSE: {exp_desc}", -exp_amount, "No Receipt"]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
+                        cash_df = pd.concat([cash_df, new_exp], ignore_index=True)
+                        save_cash_deposits(cash_df)
+                        st.success(f"✅ Expense of ₹ {exp_amount:.2f} recorded successfully!")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Please provide an expense description.")
+                else:
+                    st.error("❌ Invalid User ID or Password for Expenses authorization!")
+            
+        st.markdown("### 🏦 Bank Deposit & Transaction History")
         if not cash_df.empty:
             display_cash_df = cash_df.iloc[::-1].reset_index(drop=True)
             for idx, row in display_cash_df.iterrows():
@@ -576,15 +611,15 @@ else:
                 with st.expander(f"📅 Date: {row['Date']} | 🏦 {row['Description']} | Amount: ₹ {row['Deposit Amount (₹)']} | Receipt: {rec_name}"):
                     col_r1, col_r2 = st.columns([2, 1])
                     with col_r1:
-                        st.write(f"**Deposit Date:** {row['Date']}")
-                        st.write(f"**Bank / Description:** {row['Description']}")
-                        st.write(f"**Amount Deposited:** ₹ {row['Deposit Amount (₹)']}")
+                        st.write(f"**Date:** {row['Date']}")
+                        st.write(f"**Description:** {row['Description']}")
+                        st.write(f"**Amount:** ₹ {row['Deposit Amount (₹)']}")
                         st.write(f"**Attached File:** {rec_name}")
                         
                         rec_path = os.path.join("receipts", str(rec_name))
                         if rec_name != "No Receipt" and os.path.exists(rec_path):
                             if rec_name.lower().endswith(('.png', '.jpg', '.jpeg')):
-                                st.image(rec_path, caption="Deposit Receipt Preview", use_container_width=True)
+                                st.image(rec_path, caption="Receipt Preview", use_container_width=True)
                             with open(rec_path, "rb") as file_btn:
                                 st.download_button(
                                     label="📥 Download Receipt File",
@@ -599,13 +634,17 @@ else:
                     with col_r2:
                         st.markdown("<br><br>", unsafe_allow_html=True)
                         orig_idx = len(cash_df) - 1 - idx
+                        del_auth_pass = st.text_input("Password to Delete", type="password", key=f"del_pass_{idx}")
                         if st.button(f"🗑️ Delete Entry", key=f"del_dep_{idx}T"):
-                            cash_df = cash_df.drop(orig_idx).reset_index(drop=True)
-                            save_cash_deposits(cash_df)
-                            st.success("Deleted deposit record successfully!")
-                            st.rerun()
+                            if del_auth_pass == "samsri2528":
+                                cash_df = cash_df.drop(orig_idx).reset_index(drop=True)
+                                save_cash_deposits(cash_df)
+                                st.success("Deleted record successfully!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Incorrect password for deletion!")
         else:
-            st.info("No bank deposits recorded yet.")
+            st.info("No bank deposits or expenses recorded yet.")
 
         st.markdown("### 💰 Sales Revenue Transaction Ledger")
         if not sales_df.empty:
