@@ -109,6 +109,7 @@ if not st.session_state["authenticated"]:
 else:
     current_user = st.session_state.get("username", "admin")
     st.sidebar.title("🌾 SRI MANIKANTA TRADERS")
+    st.sidebar.write(logged_in_as := f"👤 Logged in as: **{current_user}**")
     menu = st.sidebar.radio("Navigation", ["Billing & Sales", "Manage Inventory", "Present / Closing Stock", "Sales History & Reports", "Cash Book"])
     
     if st.sidebar.button("Logout"):
@@ -563,11 +564,11 @@ else:
             
             st.markdown("---")
             st.markdown("#### 👑 Owner Authorization")
-            owner_auth_user = st.text_input("Owner ID", value="admin")
+            owner_auth_user = st.text_input("Authorizing Owner ID", value=current_user)
             owner_auth_pass = st.text_input("Owner Password", type="password", key="bank_owner_pass")
                 
             if st.form_submit_button("Save Bank Deposit & Receipt"):
-                if owner_auth_user == "admin" and owner_auth_pass == "samsri2528":
+                if owner_auth_pass == "samsri2528":
                     receipt_name = "No Receipt"
                     if receipt_file is not None:
                         receipt_name = receipt_file.name
@@ -575,13 +576,13 @@ else:
                         with open(os.path.join("receipts", receipt_file.name), "wb") as f:
                             f.write(receipt_file.getbuffer())
 
-                    new_dep = pd.DataFrame([[dep_date_str, dep_desc, dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
+                    new_dep = pd.DataFrame([[dep_date_str, f"{dep_desc} (Auth by: {owner_auth_user})", dep_amount, receipt_name]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
                     cash_df = pd.concat([cash_df, new_dep], ignore_index=True)
                     save_cash_deposits(cash_df)
-                    st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt authorized and recorded successfully!")
+                    st.success(f"✅ Bank deposit of ₹ {dep_amount:.2f} and receipt authorized by {owner_auth_user} recorded successfully!")
                     st.rerun()
                 else:
-                    st.error("❌ Invalid Owner ID or Password for authorization!")
+                    st.error("❌ Invalid Owner Password for authorization!")
 
         st.markdown("---")
         st.markdown("### 💸 Add Expense Entry (Owner Authorization)")
@@ -592,21 +593,21 @@ else:
             
             st.markdown("---")
             st.markdown("#### 👑 Owner Authorization")
-            exp_owner_user = st.text_input("Owner ID", value="admin", key="exp_owner_id")
+            exp_owner_user = st.text_input("Authorizing Owner ID", value=current_user, key="exp_owner_id")
             exp_owner_pass = st.text_input("Owner Password", type="password", key="exp_owner_pass")
             
             if st.form_submit_button("Save Expense"):
-                if exp_owner_user == "admin" and exp_owner_pass == "samsri2528":
+                if exp_owner_pass == "samsri2528":
                     if exp_desc:
-                        new_exp = pd.DataFrame([[exp_date_str, f"EXPENSE: {exp_desc}", -exp_amount, "No Receipt"]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
+                        new_exp = pd.DataFrame([[exp_date_str, f"EXPENSE: {exp_desc} (Auth by: {exp_owner_user})", -exp_amount, "No Receipt"]], columns=["Date", "Description", "Deposit Amount (₹)", "Receipt Name"])
                         cash_df = pd.concat([cash_df, new_exp], ignore_index=True)
                         save_cash_deposits(cash_df)
-                        st.success(f"✅ Expense of ₹ {exp_amount:.2f} authorized and recorded successfully!")
+                        st.success(f"✅ Expense of ₹ {exp_amount:.2f} authorized by {exp_owner_user} recorded successfully!")
                         st.rerun()
                     else:
                         st.warning("⚠️ Please provide an expense description.")
                 else:
-                    st.error("❌ Invalid Owner ID or Password for authorization!")
+                    st.error("❌ Invalid Owner Password for authorization!")
             
         st.markdown("### 🏦 Bank Deposit & Transaction History")
         if not cash_df.empty:
