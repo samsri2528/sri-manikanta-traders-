@@ -1,71 +1,78 @@
-import sqlite3
-import streamlit as st
+import time
 
-# డేటాబేస్ కనెక్షన్
-conn = sqlite3.connect('stock_db.db', check_same_thread=False)
-cursor = conn.cursor()
 
-# టేబుల్ క్రియేట్ చేయడం
-cursor.execute(
-    """
-    CREATE TABLE IF NOT EXISTS stock_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_name TEXT NOT NULL,
-        quantity INTEGER NOT NULL,
-        price REAL NOT NULL
-    )
-"""
-)
-conn.commit()
+def run_quiz():
+  # Questions database stored in a dictionary format
+  quiz_data = [
+      {
+          "question": "Python lo 'print' function deniki upayogistaru?",
+          "options": [
+              "A) Output screen meeda chupinchadaniki",
+              "B) Input tesukovadaniki",
+              "C) File create cheyyadaniki",
+              "D) Loop run cheyyadaniki",
+          ],
+          "answer": "A",
+      },
+      {
+          "question": (
+              "Ee kinda ichina vatillo konchem 'immutable' (marppuleni)"
+              " data type edi?"
+          ),
+          "options": ["A) List", "B) Dictionary", "C) Tuple", "D) Set"],
+          "answer": "C",
+      },
+      {
+          "question": "Python lo comments rayadaniki em use chestham?",
+          "options": [
+              "A) // comment",
+              "B) # comment",
+              "C) /* comment */",
+              "D) <!-- comment -->",
+          ],
+          "answer": "B",
+      },
+  ]
 
-# సెషన్ స్టేట్ ఇనిషియలైజేషన్
-if "logged_in" not in st.session_state:
-  st.session_state.logged_in = False
-  st.session_state.role = ""
+  score = 0
+  print("=" * 45)
+  print("   WELCOME TO PYTHON MINI QUIZ GAME!   ")
+  print("=" * 45)
+  time.sleep(1)
 
-st.title("స్టాక్ మేనేజ్‌మెంట్ సిస్టమ్")
+  for index, q in enumerate(quiz_data, start=1):
+    print(f"\nQuestion {index}: {q['question']}")
+    for option in q["options"]:
+      print(option)
 
-# 1. లాగిన్ సెక్షన్
-if not st.session_state.logged_in:
-  st.subheader("లాగిన్ అవ్వండి")
-  username = st.text_input("యూజర్‌నేమ్")
-  password = st.text_input("పాస్‌వర్డ్", type="password")
+    user_ans = input(
+        "\nNeeku nachina option enter chey (A/B/C/D): "
+    ).strip().upper()
 
-  if st.button("లాగిన్"):
-    if username == "admin" and password == "manikanta123":
-      st.session_state.logged_in = True
-      st.session_state.role = "admin"
-      st.rerun()
-    elif username == "manikanta" and password == "samsri2528":
-      st.session_state.logged_in = True
-      st.session_state.role = "staff"
-      st.rerun()
+    if user_ans == q["answer"]:
+      print("Correct! Super answer.")
+      score += 1
     else:
-      st.error("యూజర్‌నేమ్ లేదా పాస్‌వర్డ్ తప్పుగా ఉంది!")
+      print(f"Wrong! Correct option {q['answer']}.")
+    print("-" * 45)
+    time.sleep(0.5)
 
-# 2. స్టాక్ యాడ్ చేసే సెక్షన్
-else:
-  if st.button("లాగౌట్ (Logout)"):
-    st.session_state.logged_in = False
-    st.session_state.role = ""
-    st.rerun()
+  # Final Score Board
+  print("\n" + "=" * 20 + " RESULT " + "=" * 20)
+  print(f"Total Questions: {len(quiz_data)}")
+  print(f"Neeku vachina Score: {score}")
 
-  st.subheader("కొత్త స్టాక్ యాడ్ చేయండి")
-  item_name = st.text_input("వస్తువు పేరు (Item Name)")
-  quantity = st.number_input("పరిమాణం (Quantity)", min_value=1, step=1)
-  price = st.number_input("ధర (Price)", min_value=0.0, format="%.2f")
-  auth_code = st.text_input(
-      "స్టాక్ కోడ్ (samsri25285)", type="password", placeholder="samsri25285"
-  )
+  percentage = (score / len(quiz_data)) * 100
+  print(f"Percentage: {percentage}%")
 
-  if st.button("స్టాక్ సేవ్ చేయి"):
-    if auth_code == "samsri25285":
-      cursor.execute(
-          "INSERT INTO stock_items (item_name, quantity, price) VALUES (?, ?,"
-          " ?)",
-          (item_name, quantity, price),
-      )
-      conn.commit()
-      st.success("కొత్త స్టాక్ విజయవంతంగా యాడ్ చేయబడింది!")
-    else:
-      st.error("స్టాక్ యాడ్ చేయడానికి తప్పు సీక్రెట్ కోడ్ ఎంటర్ చేసారు!")
+  if percentage == 100:
+    print("Grade: Outstanding! Ekkaastham brilliant.")
+  elif percentage >= 50:
+    print("Grade: Good job! Inkonchem practice chey.")
+  else:
+    print("Grade: Need improvement. Malli try chey.")
+  print("=" * 48)
+
+
+if __name__ == "__main__":
+  run_quiz()
