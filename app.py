@@ -1,94 +1,142 @@
-class StoreSystem:
-    def __init__(self):
-        # యూజర్ క్రెడెన్షియల్స్ మరియు పాస్‌వర్డ్స్
-        self.users = {
-            "admin": {"password": "manikanta123", "role": "owner"},
-            "manikanta": {"password": "samsri2528", "role": "staff"},
+<?php
+session_start();
+
+// సింపుల్ డేటాబేస్ కనెక్షన్ (మీ వివరాల ప్రకారం మార్చుకోండి)
+$host = "localhost";
+$user = "root";
+$password = "";
+$dbname = "stock_db";
+
+$conn = new mysqli($host, $user, $password, $dbname);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// టేబుల్ లేకపోతే ఆటోమేటిక్‌గా క్రియేట్ అవ్వడానికి
+$conn->query("CREATE TABLE IF NOT EXISTS stock_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    item_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL
+)");
+
+$msg = "";
+$error = "";
+
+// లాగిన్ హ్యాండ్లింగ్
+if (isset($_POST['login_btn'])) {
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
+
+    if ($username === 'admin' && $password === 'manikanta123') {
+        $_SESSION['user'] = 'admin';
+        $_SESSION['role'] = 'admin';
+    } elseif ($username === 'manikanta' && $password === 'samsri2528') {
+        $_SESSION['user'] = 'manikanta';
+        $_SESSION['role'] = 'staff';
+    } else {
+        $error = "యూజర్‌నేమ్ లేదా పాస్‌వర్డ్ తప్పుగా ఉంది!";
+    }
+}
+
+// స్టాక్ యాడ్ హ్యాండ్లింగ్
+if (isset($_POST['add_stock_btn'])) {
+    $auth_code = trim($_POST['auth_code']);
+    
+    if ($auth_code === 'samsri25285') {
+        $item_name = $conn->real_escape_string($_POST['item_name']);
+        $quantity = intval($_POST['quantity']);
+        $price = floatval($_POST['price']);
+
+        $sql = "INSERT INTO stock_items (item_name, quantity, price) VALUES ('$item_name', $quantity, $price)";
+        
+        if ($conn->query($sql) === TRUE) {
+            $msg = "కొత్త స్టాక్ విజయవంతంగా యాడ్ చేయబడింది!";
+        } else {
+            $error = "సమస్య ఏర్పడింది: " . $conn->error;
         }
-        self.owner_password = "samsri25285"  # ఖర్చులు మరియు స్టాక్ అప్రూవల్ కోసం ఓనర్ పాస్‌వర్డ్
-        
-        # సాంపుల్ ఇన్వెంటరీ (స్టాక్ మరియు ధరలు)
-        self.inventory = {
-            "Rice Bag": {"price": 1200, "stock": 50},
-            "Sugar": {"price": 45, "stock": 100}
-        }
-        
-        self.pending_expenses = []
+    } else {
+        $error = "స్టాక్ యాడ్ చేయడానికి తప్పు సీక్రెట్ కోడ్ ('samsri25285') ఎంటర్ చేసారు!";
+    }
+}
 
-    def login(self):
-        print("--- లాగిన్ అవ్వండి ---")
-        username = input("యూజర్‌నేమ్ ఎంటర్ చేయండి: ")
-        password = input("పాస్‌వర్డ్ ఎంటర్ చేయండి: ")
-        
-        if username in self.users and self.users[username]["password"] == password:
-            print(f"లాగిన్ విజయవంతమైంది! ({self.users[username]['role'].upper()})")
-            return username, self.users[username]["role"]
-        else:
-            print("తప్పు యూజర్‌నేమ్ లేదా పాస్‌వర్డ్!")
-            return None, None
+// లాగౌట్
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+?>
 
-    def add_or_update_stock(self, role):
-        # 1. Manage Inventory లో స్టాక్ యాడ్ చేయడానికి పాస్‌వర్డ్ అడగాలి
-        print("\n--- స్టాక్ మేనేజ్‌మెంట్ ---")
-        entered_pass = input("స్టాక్ మార్చడానికి ఓనర్ పాస్‌వర్డ్ (samsri25285) ఎంటర్ చేయండి: ")
-        
-        if entered_pass != self.owner_password:
-            print("అనుమతి లేదు! తప్పు పాస్‌వర్డ్.")
-            return
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <title>స్టాక్ మేనేజ్‌మెంట్ సిస్టమ్</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); width: 350px; }
+        h2 { text-align: center; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { width: 100%; background: #007BFF; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        .btn-green { background: #28a745; }
+        .btn-green:hover { background: #218838; }
+        .error { color: red; text-align: center; margin-bottom: 10px; font-size: 14px; }
+        .msg { color: green; text-align: center; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
+        .logout-link { text-align: right; margin-bottom: 10px; }
+        .logout-link a { color: red; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
 
-        item = input("ఐటమ్ పేరు ఎంటర్ చేయండి: ")
-        price = float(input("ధర ఎంటర్ చేయండి: "))
-        qty = int(input("స్టాక్ క్వాంటిటీ ఎంటర్ చేయండి: "))
-        
-        self.inventory[item] = {"price": price, "stock": qty}
-        print(f"'{item}' విజయవంతంగా అప్‌డేట్ చేయబడింది!")
+<div class="box">
+    <?php if (!isset($_SESSION['user'])): ?>
+        <!-- 1. లాగిన్ ఫారం -->
+        <h2>లాగిన్ అవ్వండి</h2>
+        <?php if($error != "") { echo "<div class='error'>$error</div>"; } ?>
+        <form method="POST" action="">
+            <div class="form-group">
+                <label>యూజర్‌నేమ్:</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>పాస్‌వర్డ్:</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit" name="login_btn" class="btn">లాగిన్</button>
+        </form>
 
-    def billing_section(self):
-        # 2. బిల్లింగ్ చేసేటప్పుడు ప్రైస్ మార్చే ఆప్షన్ ఉండకూడదు
-        print("\n--- బిల్లింగ్ కౌంటర్ ---")
-        item = input("కొనుగోలు చేస్తున్న ఐటమ్ పేరు: ")
+    <?php else: ?>
+        <!-- 2. కొత్త స్టాక్ యాడ్ చేసే ఫారం -->
+        <div class="logout-link"><a href="?logout=true">లాగౌట్ (Logout)</a></div>
+        <h2>కొత్త స్టాక్ యాడ్ చేయండి</h2>
+        <?php if($error != "") { echo "<div class='error'>$error</div>"; } ?>
+        <?php if($msg != "") { echo "<div class='msg'>$msg</div>"; } ?>
         
-        if item not in self.inventory:
-            print("ఈ ఐటమ్ ఇన్వెంటరీలో లేదు!")
-            return
-            
-        fixed_price = self.inventory[item]["price"]
-        qty = int(input(f"క్వాంటిటీ ఎంటర్ చేయండి (ఫిక్స్డ్ ధర: {fixed_price}): "))
-        
-        total_amount = fixed_price * qty
-        print(f"మొత్తం బిల్లు: {total_amount} (ధర మార్చడానికి అనుమతి లేదు)")
+        <form method="POST" action="">
+            <div class="form-group">
+                <label>వస్తువు పేరు (Item Name):</label>
+                <input type="text" name="item_name" required>
+            </div>
+            <div class="form-group">
+                <label>పరిమాణం (Quantity):</label>
+                <input type="number" name="quantity" required>
+            </div>
+            <div class="form-group">
+                <label>ధర (Price):</label>
+                <input type="text" name="price" required>
+            </div>
+            <div class="form-group">
+                <label>స్టాక్ కోడ్ (samsri25285):</label>
+                <input type="password" name="auth_code" required placeholder="samsri25285 ఎంటర్ చేయండి">
+            </div>
+            <button type="submit" name="add_stock_btn" class="btn btn-green">స్టాక్ సేవ్ చేయి</button>
+        </form>
+    <?php endif; ?>
+</div>
 
-    def petty_cash_expense(self):
-        # 3. ఖర్చులు & డిస్కౌంట్లు ఓనర్ అథరైజేషన్ ఉండాలి
-        print("\n--- పెట్టీ క్యాష్ / ఖర్చులు / డిస్కౌంట్లు ---")
-        reason = input("ఖర్చు లేదా డిస్కౌంట్ ఎందుకు ఇస్తున్నారు?: ")
-        amount = float(input("మొత్తం (Amount): "))
-        
-        entered_pass = input("దీనిని అప్రూవ్ చేయడానికి ఓనర్ పాస్‌వర్డ్ ఎంటర్ చేయండి: ")
-        
-        if entered_pass == self.owner_password:
-            print(f"ఖర్చు '{reason}' ({amount}) ఓనర్ చేత అథరైజ్ చేయబడింది మరియు సేవ్ అయింది!")
-            self.pending_expenses.append({"reason": reason, "amount": amount, "status": "Approved"})
-        else:
-            print("ఓనర్ పాస్‌వర్డ్ తప్పు! ఈ ఖర్చు పెండింగ్‌లో ఉంది లేదా రద్దు చేయబడింది.")
-
-# రన్ చేసే విధానం
-app = StoreSystem()
-while True:
-    user, role = app.login()
-    if user:
-        while True:
-            print("\n1. స్టాక్ యాడ్/ఎడిట్ చేయి (Inventory)\n2. బిల్లింగ్ చేయి (Billing)\n3. ఖర్చు లేదా డిస్కౌంట్ ఎంటర్ చేయి (Petty Cash)\n4. లాగౌట్")
-            choice = input("మీ ఆప్షన్ ఎంచుకోండి (1-4): ")
-            
-            if choice == "1":
-                app.add_or_update_stock(role)
-            elif choice == "2":
-                app.billing_section()
-            elif choice == "3":
-                app.petty_cash_expense()
-            elif choice == "4":
-                print("లాగౌట్ అయ్యారు.\n")
-                break
-            else:
-                print("తప్పు ఆప్షన్ ఎంచుకున్నారు.")
+</body>
+</html>
